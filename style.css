@@ -15,9 +15,14 @@ body {
   text-decoration: underline;
 }
 
+#controls {
+  margin: 10px 0;
+}
+
 #reader-container {
   margin-top: 20px;
   width: 600px;
   height: 800px;
   border: 1px solid #ccc;
+  overflow: auto;
 }
