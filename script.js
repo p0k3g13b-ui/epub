@@ -3,7 +3,7 @@ const readerContainer = document.getElementById('reader-container');
 let currentBook = null;
 let rendition = null;
 
-// Affiche la liste avec un seul livre
+// Liste avec un seul EPUB
 epubListEl.innerHTML = '';
 const li = document.createElement('li');
 li.textContent = "parfum.epub";
@@ -23,7 +23,13 @@ function openEpub(name) {
     height: "100%"
   });
 
+  // Défilement vertical (optionnel)
+  rendition.flow("scrolled");
+
   // Affiche depuis le début
   rendition.display();
-}
 
+  // Navigation par boutons
+  document.getElementById("prev").onclick = () => rendition.prev();
+  document.getElementById("next").onclick = () => rendition.next();
+}
