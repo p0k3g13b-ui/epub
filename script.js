@@ -1,6 +1,6 @@
 // --- Config Supabase ---
-const supabaseUrl = 'TON_SUPABASE_URL';
-const supabaseKey = 'TA_CLE_API_ANONYME';
+const supabaseUrl = 'https://qtqkbuvmbakiheqcyxed.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cWtidXZtYmFraWhlcWN5eGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwOTEwMDEsImV4cCI6MjA4MTY2NzAwMX0.fzWkuVmQB770dwGKeLMFGG6EwIwZqlC_aCcZI7EBQUA';
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 // Liste des EPUB disponibles
@@ -60,3 +60,4 @@ async function openEpub(name) {
 // Initialisation
 
 loadEpubList();
+
