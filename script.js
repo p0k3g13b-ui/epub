@@ -5,8 +5,7 @@ const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 // Liste des EPUB disponibles
 const epubs = [
-  "livre1.epub",
-  "livre2.epub"
+  "Le parfum -- Suskind,Patrick [Suskind,Patrick] -- 1984 -- 69c25114e05aed6246df157ec3f02dc0 -- Anna’s Archive.epub",
 ];
 
 const epubListEl = document.getElementById('epub-list');
@@ -59,4 +58,5 @@ async function openEpub(name) {
 }
 
 // Initialisation
+
 loadEpubList();
