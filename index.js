@@ -1,7 +1,7 @@
 const epubListEl = document.getElementById('epub-list');
 
 // Liste des EPUB disponibles
-const epubs = ["parfum.epub"]; // ajoute d’autres fichiers ici
+const epubs = ["Le parfum.epub","Entre deux mondes"]; // ajoute d’autres fichiers ici
 
 epubs.forEach(async (name) => {
   const container = document.createElement('div');
@@ -21,3 +21,4 @@ epubs.forEach(async (name) => {
 
   epubListEl.appendChild(container);
 });
+
