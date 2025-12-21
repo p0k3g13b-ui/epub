@@ -2,44 +2,35 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%; /* nécessaire pour que les zones prennent toute la hauteur */
-}
-
-body {
+  height: 100%;
   font-family: Arial, sans-serif;
-  padding: 20px;
 }
 
-#epub-list {
-  list-style: none;
-  padding: 0;
-}
-
-#epub-list li {
-  margin: 5px 0;
-  cursor: pointer;
-  color: blue;
-  text-decoration: underline;
-}
-
-/* Conteneur lecteur plein écran */
 #reader {
-  position: relative; /* parent pour les zones absolute */
   width: 100vw;
-  height: 100vh;      /* hauteur complète de l’écran */
+  height: calc(100vh - 60px); /* laisse de la place pour les boutons */
   border: 1px solid #ccc;
   overflow: auto;
 }
 
-/* Zones invisibles pour navigation chapitre */
-#prev-zone, #next-zone {
-  position: absolute;
-  top: 0;
-  height: 100%;       /* prend toute la hauteur du conteneur */
-  width: 20%;         /* largeur de la zone sensible, ajustable */
-  z-index: 10;
-  cursor: pointer;
+/* Boutons de navigation en bas */
+#nav-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  background-color: rgba(255,255,255,0.9);
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+  z-index: 100;
 }
 
-#prev-zone { left: 0; }
-#next-zone { right: 0; }
+#nav-buttons button {
+  font-size: 18px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
