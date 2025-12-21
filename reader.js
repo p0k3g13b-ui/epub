@@ -80,6 +80,8 @@ readerEl.addEventListener('touchend', e => {
   touchEndX = e.changedTouches[0].screenX;
   handleGesture();
 }, false);
+document.getElementById('prev-zone').addEventListener('click', () => rendition.prev());
+document.getElementById('next-zone').addEventListener('click', () => rendition.next());
 
 function handleGesture() {
   const delta = touchEndX - touchStartX;
