@@ -14,7 +14,7 @@ if (!bookName) {
 
 // Initialise le conteneur du lecteur
 const readerEl = document.getElementById('reader');
-readerEl.innerHTML = ''; // vide au cas où
+readerEl.innerHTML = ''; 
 
 // Charge le livre
 const book = ePub(`epubs/${bookName}`);
@@ -25,6 +25,13 @@ const rendition = book.renderTo(readerEl, {
 
 rendition.flow("scrolled");
 rendition.display();
+
+// Supprime marges/paddings pour un scroll quasi continu
+rendition.hooks.content.register((contents) => {
+  const doc = contents.document;
+  doc.body.style.margin = '0';
+  doc.body.style.padding = '0';
+});
 
 // Restaure la dernière position si elle existe
 (async () => {
@@ -60,3 +67,27 @@ rendition.on('relocated', async (location) => {
     console.warn("Impossible de sauvegarder la position :", e);
   }
 });
+
+// --- Swipe horizontal ---
+let touchStartX = 0;
+let touchEndX = 0;
+
+readerEl.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+}, false);
+
+readerEl.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleGesture();
+}, false);
+
+function handleGesture() {
+  const delta = touchEndX - touchStartX;
+  if (Math.abs(delta) > 50) { // seuil de swipe
+    if (delta > 0) {
+      rendition.prev(); // swipe à droite → chapitre précédent
+    } else {
+      rendition.next(); // swipe à gauche → chapitre suivant
+    }
+  }
+}
