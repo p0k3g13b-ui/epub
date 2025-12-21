@@ -1,7 +1,8 @@
 // --- Supabase ---
 const supabaseUrl = 'https://qtqkbuvmbakiheqcyxed.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cWtidXZtYmFraWhlcWN5eGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwOTEwMDEsImV4cCI6MjA4MTY2NzAwMX0.fzWkuVmQB770dwGKeLMFGG6EwIwZqlC_aCcZI7EBQUA';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 const epubListEl = document.getElementById('epub-list');
 
@@ -9,9 +10,15 @@ const epubListEl = document.getElementById('epub-list');
 const epubs = ["parfum.epub"];
 
 async function loadList() {
-  const { data = [] } = await supabase
-    .from('reading_positions')
-    .select('*');
+  let data = [];
+  try {
+    const { data: d = [] } = await supabaseClient
+      .from('reading_positions')
+      .select('*');
+    data = d;
+  } catch(e) {
+    console.error("Erreur Supabase :", e);
+  }
 
   const books = epubs
     .map(name => {
