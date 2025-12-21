@@ -1,41 +1,23 @@
-// --- Supabase ---
-const supabaseUrl = 'https://qtqkbuvmbakiheqcyxed.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cWtidXZtYmFraWhlcWN5eGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwOTEwMDEsImV4cCI6MjA4MTY2NzAwMX0.fzWkuVmQB770dwGKeLMFGG6EwIwZqlC_aCcZI7EBQUA';
-
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
 const epubListEl = document.getElementById('epub-list');
 
-// Liste statique pour l’instant
-const epubs = ["parfum.epub"];
+// Liste des EPUB disponibles
+const epubs = ["parfum.epub"]; // ajoute d’autres fichiers ici
 
-async function loadList() {
-  let data = [];
-  try {
-    const { data: d = [] } = await supabaseClient
-      .from('reading_positions')
-      .select('*');
-    data = d;
-  } catch(e) {
-    console.error("Erreur Supabase :", e);
-  }
+epubs.forEach(async (name) => {
+  const container = document.createElement('div');
+  container.className = 'epub-item';
 
-  const books = epubs
-    .map(name => {
-      const r = data.find(d => d.epub_name === name);
-      return { name, last: r?.last_opened || 0 };
-    })
-    .sort((a, b) => new Date(b.last) - new Date(a.last));
+  // Crée un petit lecteur temporaire pour la première page
+  const book = ePub(`epubs/${name}`);
+  const rendition = book.renderTo(container, { width: 200, height: 250 });
+  
+  rendition.flow("paginated"); // pour afficher une seule page
+  rendition.display(0); // première page
 
-  epubListEl.innerHTML = '';
-  books.forEach(b => {
-    const li = document.createElement('li');
-    li.textContent = b.name;
-    li.onclick = () => {
-      window.location.href = `reader.html?book=${encodeURIComponent(b.name)}`;
-    };
-    epubListEl.appendChild(li);
+  container.addEventListener('click', () => {
+    // Redirection vers le lecteur complet
+    window.location.href = `reader.html?book=${encodeURIComponent(name)}`;
   });
-}
 
-loadList();
+  epubListEl.appendChild(container);
+});
