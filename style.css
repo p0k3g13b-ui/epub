@@ -1,3 +1,4 @@
+/* Styles généraux */
 body {
   font-family: Arial, sans-serif;
   padding: 20px;
@@ -15,14 +16,29 @@ body {
   text-decoration: underline;
 }
 
-#controls {
-  margin: 10px 0;
-}
-
-#reader-container {
-  margin-top: 20px;
-  width: 600px;
-  height: 800px;
+/* Conteneur lecteur plein écran */
+#reader {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
   border: 1px solid #ccc;
   overflow: auto;
+}
+
+/* Zones invisibles pour navigation chapitre */
+#prev-zone, #next-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 20%; /* largeur de la zone sensible, ajustable */
+  z-index: 10;
+  cursor: pointer;
+}
+
+#prev-zone {
+  left: 0;
+}
+
+#next-zone {
+  right: 0;
 }
