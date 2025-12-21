@@ -9,7 +9,7 @@ let currentBook = null;
 let rendition = null;
 
 // Liste des EPUB (ici un seul pour l’exemple)
-const epubs = ["parfum.epub"];
+const epubs = ["parfum.epub","Entre deux mondes.epub"];
 
 // Affiche la liste triée par dernière ouverture
 async function loadEpubList() {
@@ -66,4 +66,5 @@ async function openEpub(name) {
 
 // Initialisation
 loadEpubList();
+
 
