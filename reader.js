@@ -3,7 +3,7 @@ const supabaseUrl = 'https://qtqkbuvmbakiheqcyxed.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cWtidXZtYmFraWhlcWN5eGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwOTEwMDEsImV4cCI6MjA4MTY2NzAwMX0.fzWkuVmQB770dwGKeLMFGG6EwIwZqlC_aCcZI7EBQUA';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-// Récupère le nom du livre depuis l’URL
+// --- Params ---
 const params = new URLSearchParams(window.location.search);
 const bookName = params.get('book');
 
@@ -12,11 +12,10 @@ if (!bookName) {
   throw new Error("No book specified");
 }
 
-// Initialise le conteneur du lecteur
+// --- Reader ---
 const readerEl = document.getElementById('reader');
 readerEl.innerHTML = '';
 
-// Charge le livre
 const book = ePub(`epubs/${bookName}`);
 const rendition = book.renderTo(readerEl, {
   width: "100%",
@@ -26,14 +25,14 @@ const rendition = book.renderTo(readerEl, {
 rendition.flow("scrolled");
 rendition.display();
 
-// Supprime marges/paddings pour un scroll quasi continu
-rendition.hooks.content.register((contents) => {
+// Supprime marges internes
+rendition.hooks.content.register(contents => {
   const doc = contents.document;
   doc.body.style.margin = '0';
   doc.body.style.padding = '0';
 });
 
-// Restaure la dernière position si elle existe
+// --- Restauration position ---
 (async () => {
   try {
     const { data } = await supabaseClient
@@ -42,32 +41,49 @@ rendition.hooks.content.register((contents) => {
       .eq('epub_name', bookName)
       .single();
 
-    if (data?.last_position) {
-      rendition.display(data.last_position);
+    if (data?.last_cfi) {
+      rendition.display(data.last_cfi);
     }
-  } catch(e) {
-    console.warn("Impossible de récupérer la dernière position :", e);
+  } catch (e) {
+    console.warn("Aucune position sauvegardée");
   }
 })();
 
-// Sauvegarde automatique à chaque relocation
-rendition.on('relocated', async (location) => {
-  try {
-    await supabaseClient
-      .from('reading_positions')
-      .upsert(
-        {
-          epub_name: bookName,
-          last_position: location.start.cfi,
-          last_opened: new Date().toISOString()
-        },
-        { onConflict: 'epub_name' }
-      );
-  } catch(e) {
-    console.warn("Impossible de sauvegarder la position :", e);
-  }
+// --- Sauvegarde fine (scroll réel) ---
+let saveTimeout = null;
+
+function saveCurrentPosition() {
+  const location = rendition.currentLocation();
+  if (!location || !location.start) return;
+
+  const payload = {
+    epub_name: bookName,
+    last_cfi: location.start.cfi,
+    last_percentage: location.start.percentage,
+    last_opened: new Date().toISOString()
+  };
+
+  supabaseClient
+    .from('reading_positions')
+    .upsert(payload, { onConflict: 'epub_name' })
+    .catch(() => {});
+}
+
+// Throttle pour éviter le spam
+readerEl.addEventListener('scroll', () => {
+  if (saveTimeout) return;
+  saveTimeout = setTimeout(() => {
+    saveCurrentPosition();
+    saveTimeout = null;
+  }, 1500);
 });
 
+// Sauvegarde aussi lors d’un vrai changement de section (fallback)
+rendition.on('relocated', saveCurrentPosition);
+
 // --- Boutons navigation ---
-document.getElementById('prev-button').addEventListener('click', () => rendition.prev());
-document.getElementById('next-button').addEventListener('click', () => rendition.next());
+document.getElementById('prev-button')
+  .addEventListener('click', () => rendition.prev());
+
+document.getElementById('next-button')
+  .addEventListener('click', () => rendition.next());
