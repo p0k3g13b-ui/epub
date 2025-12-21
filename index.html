@@ -2,37 +2,16 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Lecteur EPUB</title>
+  <title>Mes EPUB</title>
   <link rel="stylesheet" href="style.css">
 
-  <!-- JSZip requis par EPUB.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-  <!-- EPUB.js -->
-  <script src="lib/epub.min.js"></script>
+  <!-- Supabase v1 -->
+  <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
 </head>
 <body>
   <h1>Mes EPUB</h1>
   <ul id="epub-list"></ul>
 
-  <!-- Boutons de navigation -->
-  <div id="controls">
-    <button id="prev">Précédent</button>
-    <button id="next">Suivant</button>
-  </div>
-
-  <!-- Conteneur du lecteur -->
-  <div id="reader-container"></div>
-  
-  <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
-  <script>
-  console.log("supabase =", window.supabase);
-  </script>
-
-
-  <script src="script.js"></script>
+  <script src="index.js"></script>
 </body>
 </html>
-
-
-
