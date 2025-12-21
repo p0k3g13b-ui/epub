@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Lecture</title>
+
+  <!-- JSZip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- EPUB.js -->
+  <script src="lib/epub.min.js"></script>
+
+  <!-- Supabase v1 -->
+  <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    #reader {
+      width: 100vw;
+      height: 100vh;
+    }
+    #back {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+<button id="back" onclick="history.back()">←</button>
+<div id="reader"></div>
+
+<script src="reader.js"></script>
+</body>
+</html>
