@@ -14,7 +14,7 @@ if (!bookName) {
 
 // Initialise le conteneur du lecteur
 const readerEl = document.getElementById('reader');
-readerEl.innerHTML = ''; 
+readerEl.innerHTML = '';
 
 // Charge le livre
 const book = ePub(`epubs/${bookName}`);
@@ -68,13 +68,6 @@ rendition.on('relocated', async (location) => {
   }
 });
 
-// --- Zones invisibles pour navigation chapitre ---
-document.addEventListener('DOMContentLoaded', () => {
-  const prevZone = document.getElementById('prev-zone');
-  const nextZone = document.getElementById('next-zone');
-
-  if (prevZone && nextZone) {
-    prevZone.addEventListener('click', () => rendition.prev());
-    nextZone.addEventListener('click', () => rendition.next());
-  }
-});
+// --- Boutons navigation ---
+document.getElementById('prev-button').addEventListener('click', () => rendition.prev());
+document.getElementById('next-button').addEventListener('click', () => rendition.next());
