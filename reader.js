@@ -6,18 +6,14 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 // --- Params ---
 const params = new URLSearchParams(window.location.search);
 const bookName = params.get('book');
-if (!bookName) throw new Error("No book");
+if (!bookName) throw new Error("No book specified");
 
 // --- Reader ---
 const readerEl = document.getElementById('reader');
 const book = ePub(`epubs/${bookName}`);
-const rendition = book.renderTo(readerEl, {
-  width: "100%",
-  height: "100%"
-});
+const rendition = book.renderTo(readerEl, { width: "100%", height: "100%" });
 
 rendition.flow("scrolled");
-rendition.display();
 
 // --- Nettoyage marges ---
 rendition.hooks.content.register(contents => {
@@ -26,22 +22,28 @@ rendition.hooks.content.register(contents => {
   doc.body.style.padding = '0';
 });
 
-// --- Restauration position ---
-(async () => {
-  const { data } = await supabaseClient
-    .from('reading_positions')
-    .select('*')
-    .eq('epub_name', bookName)
-    .single();
+// --- Restauration position après que le livre soit prêt ---
+book.ready.then(async () => {
+  try {
+    const { data } = await supabaseClient
+      .from('reading_positions')
+      .select('*')
+      .eq('epub_name', bookName)
+      .single();
 
-  if (data?.last_cfi) {
-    rendition.display(data.last_cfi);
+    if (data?.last_cfi) {
+      rendition.display(data.last_cfi);
+    } else {
+      rendition.display(0);
+    }
+  } catch (e) {
+    rendition.display(0);
+    console.warn("Impossible de récupérer la dernière position :", e);
   }
-})();
+});
 
 // --- Sauvegarde précise ---
 let saveTimeout = null;
-
 function savePosition() {
   const loc = rendition.currentLocation();
   if (!loc?.start?.cfi) return;
@@ -53,13 +55,14 @@ function savePosition() {
       last_cfi: loc.start.cfi,
       last_percentage: loc.start.percentage,
       last_opened: new Date().toISOString()
-    }, { onConflict: 'epub_name' });
+    }, { onConflict: 'epub_name' })
+    .catch(() => {});
 }
 
-// 🔑 LE POINT CLÉ : écouter le scroll DANS l’iframe
+// Écoute le scroll DANS l’iframe
 rendition.hooks.content.register(contents => {
-  const doc = contents.document;
-  doc.addEventListener('scroll', () => {
+  const scrollEl = contents.document.scrollingElement || contents.document.documentElement;
+  scrollEl.addEventListener('scroll', () => {
     if (saveTimeout) return;
     saveTimeout = setTimeout(() => {
       savePosition();
@@ -68,9 +71,9 @@ rendition.hooks.content.register(contents => {
   }, { passive: true });
 });
 
-// Fallback (changement de section)
+// Fallback sur relocation (section change)
 rendition.on('relocated', savePosition);
 
-// --- Boutons ---
+// --- Boutons navigation ---
 document.getElementById('prev-button').onclick = () => rendition.prev();
 document.getElementById('next-button').onclick = () => rendition.next();
