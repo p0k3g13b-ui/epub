@@ -13,30 +13,17 @@
   <!-- Supabase v1 -->
   <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-    #reader {
-      width: 100vw;
-      height: 100vh;
-    }
-    #back {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<button id="back" onclick="history.back()">←</button>
 <div id="reader"></div>
-<div id="prev-zone"></div>
-<div id="next-zone"></div>
+
+<!-- Boutons visibles en bas -->
+<div id="nav-buttons">
+  <button id="prev-button">← Précédent</button>
+  <button id="next-button">Suivant →</button>
+</div>
 
 <script src="reader.js"></script>
 </body>
