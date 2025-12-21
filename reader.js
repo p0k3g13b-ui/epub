@@ -68,28 +68,13 @@ rendition.on('relocated', async (location) => {
   }
 });
 
-// --- Swipe horizontal ---
-let touchStartX = 0;
-let touchEndX = 0;
+// --- Zones invisibles pour navigation chapitre ---
+document.addEventListener('DOMContentLoaded', () => {
+  const prevZone = document.getElementById('prev-zone');
+  const nextZone = document.getElementById('next-zone');
 
-readerEl.addEventListener('touchstart', e => {
-  touchStartX = e.changedTouches[0].screenX;
-}, false);
-
-readerEl.addEventListener('touchend', e => {
-  touchEndX = e.changedTouches[0].screenX;
-  handleGesture();
-}, false);
-document.getElementById('prev-zone').addEventListener('click', () => rendition.prev());
-document.getElementById('next-zone').addEventListener('click', () => rendition.next());
-
-function handleGesture() {
-  const delta = touchEndX - touchStartX;
-  if (Math.abs(delta) > 50) { // seuil de swipe
-    if (delta > 0) {
-      rendition.prev(); // swipe à droite → chapitre précédent
-    } else {
-      rendition.next(); // swipe à gauche → chapitre suivant
-    }
+  if (prevZone && nextZone) {
+    prevZone.addEventListener('click', () => rendition.prev());
+    nextZone.addEventListener('click', () => rendition.next());
   }
-}
+});
