@@ -1,4 +1,10 @@
 /* Styles généraux */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%; /* nécessaire pour que les zones prennent toute la hauteur */
+}
+
 body {
   font-family: Arial, sans-serif;
   padding: 20px;
@@ -18,9 +24,9 @@ body {
 
 /* Conteneur lecteur plein écran */
 #reader {
-  position: relative;
+  position: relative; /* parent pour les zones absolute */
   width: 100vw;
-  height: 100vh;
+  height: 100vh;      /* hauteur complète de l’écran */
   border: 1px solid #ccc;
   overflow: auto;
 }
@@ -29,16 +35,11 @@ body {
 #prev-zone, #next-zone {
   position: absolute;
   top: 0;
-  height: 100%;
-  width: 20%; /* largeur de la zone sensible, ajustable */
+  height: 100%;       /* prend toute la hauteur du conteneur */
+  width: 20%;         /* largeur de la zone sensible, ajustable */
   z-index: 10;
   cursor: pointer;
 }
 
-#prev-zone {
-  left: 0;
-}
-
-#next-zone {
-  right: 0;
-}
+#prev-zone { left: 0; }
+#next-zone { right: 0; }
