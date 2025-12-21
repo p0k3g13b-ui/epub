@@ -6,16 +6,10 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 // --- Params ---
 const params = new URLSearchParams(window.location.search);
 const bookName = params.get('book');
-
-if (!bookName) {
-  alert("Aucun livre sélectionné");
-  throw new Error("No book specified");
-}
+if (!bookName) throw new Error("No book");
 
 // --- Reader ---
 const readerEl = document.getElementById('reader');
-readerEl.innerHTML = '';
-
 const book = ePub(`epubs/${bookName}`);
 const rendition = book.renderTo(readerEl, {
   width: "100%",
@@ -25,7 +19,7 @@ const rendition = book.renderTo(readerEl, {
 rendition.flow("scrolled");
 rendition.display();
 
-// Supprime marges internes
+// --- Nettoyage marges ---
 rendition.hooks.content.register(contents => {
   const doc = contents.document;
   doc.body.style.margin = '0';
@@ -34,56 +28,49 @@ rendition.hooks.content.register(contents => {
 
 // --- Restauration position ---
 (async () => {
-  try {
-    const { data } = await supabaseClient
-      .from('reading_positions')
-      .select('*')
-      .eq('epub_name', bookName)
-      .single();
+  const { data } = await supabaseClient
+    .from('reading_positions')
+    .select('*')
+    .eq('epub_name', bookName)
+    .single();
 
-    if (data?.last_cfi) {
-      rendition.display(data.last_cfi);
-    }
-  } catch (e) {
-    console.warn("Aucune position sauvegardée");
+  if (data?.last_cfi) {
+    rendition.display(data.last_cfi);
   }
 })();
 
-// --- Sauvegarde fine (scroll réel) ---
+// --- Sauvegarde précise ---
 let saveTimeout = null;
 
-function saveCurrentPosition() {
-  const location = rendition.currentLocation();
-  if (!location || !location.start) return;
-
-  const payload = {
-    epub_name: bookName,
-    last_cfi: location.start.cfi,
-    last_percentage: location.start.percentage,
-    last_opened: new Date().toISOString()
-  };
+function savePosition() {
+  const loc = rendition.currentLocation();
+  if (!loc?.start?.cfi) return;
 
   supabaseClient
     .from('reading_positions')
-    .upsert(payload, { onConflict: 'epub_name' })
-    .catch(() => {});
+    .upsert({
+      epub_name: bookName,
+      last_cfi: loc.start.cfi,
+      last_percentage: loc.start.percentage,
+      last_opened: new Date().toISOString()
+    }, { onConflict: 'epub_name' });
 }
 
-// Throttle pour éviter le spam
-readerEl.addEventListener('scroll', () => {
-  if (saveTimeout) return;
-  saveTimeout = setTimeout(() => {
-    saveCurrentPosition();
-    saveTimeout = null;
-  }, 1500);
+// 🔑 LE POINT CLÉ : écouter le scroll DANS l’iframe
+rendition.hooks.content.register(contents => {
+  const doc = contents.document;
+  doc.addEventListener('scroll', () => {
+    if (saveTimeout) return;
+    saveTimeout = setTimeout(() => {
+      savePosition();
+      saveTimeout = null;
+    }, 1500);
+  }, { passive: true });
 });
 
-// Sauvegarde aussi lors d’un vrai changement de section (fallback)
-rendition.on('relocated', saveCurrentPosition);
+// Fallback (changement de section)
+rendition.on('relocated', savePosition);
 
-// --- Boutons navigation ---
-document.getElementById('prev-button')
-  .addEventListener('click', () => rendition.prev());
-
-document.getElementById('next-button')
-  .addEventListener('click', () => rendition.next());
+// --- Boutons ---
+document.getElementById('prev-button').onclick = () => rendition.prev();
+document.getElementById('next-button').onclick = () => rendition.next();
