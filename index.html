@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Mes EPUB</title>
-  <link rel="stylesheet" href="style.css">
 
-  <!-- Supabase v1 -->
-  <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
+  <!-- JSZip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- EPUB.js -->
+  <script src="lib/epub.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Mes EPUB</h1>
-  <ul id="epub-list"></ul>
+  <div id="epub-list"></div>
 
   <script src="index.js"></script>
 </body>
