@@ -1,49 +1,62 @@
 // --- Supabase ---
 const supabaseUrl = 'https://qtqkbuvmbakiheqcyxed.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cWtidXZtYmFraWhlcWN5eGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwOTEwMDEsImV4cCI6MjA4MTY2NzAwMX0.fzWkuVmQB770dwGKeLMFGG6EwIwZqlC_aCcZI7EBQUA';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-// Récupère le nom du livre
+// Récupère le nom du livre depuis l’URL
 const params = new URLSearchParams(window.location.search);
 const bookName = params.get('book');
 
 if (!bookName) {
-  alert("Aucun livre");
-  throw new Error("No book");
+  alert("Aucun livre sélectionné");
+  throw new Error("No book specified");
 }
 
-// Charge l’EPUB
+// Initialise le conteneur du lecteur
+const readerEl = document.getElementById('reader');
+readerEl.innerHTML = ''; // vide au cas où
+
+// Charge le livre
 const book = ePub(`epubs/${bookName}`);
-const rendition = book.renderTo("reader", {
+const rendition = book.renderTo(readerEl, {
   width: "100%",
   height: "100%"
 });
 
+rendition.flow("scrolled");
 rendition.display();
 
-// Restaure position
+// Restaure la dernière position si elle existe
 (async () => {
-  const { data } = await supabase
-    .from('reading_positions')
-    .select('*')
-    .eq('epub_name', bookName)
-    .single();
+  try {
+    const { data } = await supabaseClient
+      .from('reading_positions')
+      .select('*')
+      .eq('epub_name', bookName)
+      .single();
 
-  if (data?.last_position) {
-    rendition.display(data.last_position);
+    if (data?.last_position) {
+      rendition.display(data.last_position);
+    }
+  } catch(e) {
+    console.warn("Impossible de récupérer la dernière position :", e);
   }
 })();
 
-// Sauvegarde position
+// Sauvegarde automatique à chaque relocation
 rendition.on('relocated', async (location) => {
-  await supabase
-    .from('reading_positions')
-    .upsert(
-      {
-        epub_name: bookName,
-        last_position: location.start.cfi,
-        last_opened: new Date().toISOString()
-      },
-      { onConflict: 'epub_name' }
-    );
+  try {
+    await supabaseClient
+      .from('reading_positions')
+      .upsert(
+        {
+          epub_name: bookName,
+          last_position: location.start.cfi,
+          last_opened: new Date().toISOString()
+        },
+        { onConflict: 'epub_name' }
+      );
+  } catch(e) {
+    console.warn("Impossible de sauvegarder la position :", e);
+  }
 });
