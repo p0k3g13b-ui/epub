@@ -57,11 +57,13 @@ async function openEpub(name) {
     await supabaseClient.from('reading_positions').upsert({
       epub_name: name,
       last_position: pos,
-      last_opened: new Date()
-    });
+      last_opened: new Date().toISOString()
+    },
+    { onConflict: 'epub_name' });
     loadEpubList(); // met à jour l’ordre des livres
   });
 }
 
 // Initialisation
 loadEpubList();
+
