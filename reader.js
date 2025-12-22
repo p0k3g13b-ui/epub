@@ -80,7 +80,7 @@ readerEl.addEventListener('touchend', e => {
 
 function handleGesture() {
   const delta = touchEndX - touchStartX;
-  if (Math.abs(delta) > 50) { // seuil de swipe
+  if (Math.abs(delta) > 5) { // seuil de swipe
     if (delta > 0) {
       // swipe à droite → chapitre précédent
       rendition.prev();
