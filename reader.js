@@ -28,21 +28,8 @@ rendition.flow("scrolled");
 // Variables de sauvegarde
 let saveInterval = null;
 let isLocationsReady = false;
-let currentDoc = null;
+let epubContainer = null;
 
-// Ajoute après la ligne "let currentDoc = null;"
-setInterval(() => {
-  console.log("🔍 DEBUG Scroll positions:", {
-    reader: document.getElementById('reader')?.scrollTop,
-    epubContainer: document.querySelector('.epub-container')?.scrollTop,
-    epubView: document.querySelector('.epub-view')?.scrollTop,
-    // Cherche tous les divs avec un scroll
-    allScrollable: Array.from(document.querySelectorAll('div')).map(div => ({
-      className: div.className,
-      scrollTop: div.scrollTop
-    })).filter(x => x.scrollTop > 0)
-  });
-}, 3000);
 // --- Génération des locations ---
 book.ready.then(() => {
   return book.locations.generate(1500);
@@ -56,8 +43,6 @@ book.ready.then(() => {
 // --- Style personnalisé ---
 rendition.hooks.content.register((contents) => {
   const doc = contents.document;
-  currentDoc = doc; // Garde une référence au document
-  
   const style = doc.createElement("style");
   style.textContent = `
     body {
@@ -69,20 +54,25 @@ rendition.hooks.content.register((contents) => {
   doc.head.appendChild(style);
 });
 
+// --- Fonction pour obtenir le container de scroll ---
+function getEpubContainer() {
+  if (!epubContainer) {
+    epubContainer = document.querySelector('.epub-container');
+  }
+  return epubContainer;
+}
+
 // --- Fonction pour obtenir la position de scroll ---
 function getScrollPosition() {
-  if (!currentDoc) return 0;
-  return currentDoc.documentElement.scrollTop || currentDoc.body.scrollTop || 0;
+  const container = getEpubContainer();
+  return container ? container.scrollTop : 0;
 }
 
 // --- Fonction pour définir la position de scroll ---
 function setScrollPosition(scrollTop) {
-  if (!currentDoc) return;
-  if (currentDoc.documentElement) {
-    currentDoc.documentElement.scrollTop = scrollTop;
-  }
-  if (currentDoc.body) {
-    currentDoc.body.scrollTop = scrollTop;
+  const container = getEpubContainer();
+  if (container) {
+    container.scrollTop = scrollTop;
   }
 }
 
@@ -91,7 +81,7 @@ function startAutoSave() {
   if (saveInterval) return;
   
   saveInterval = setInterval(async () => {
-    if (!isLocationsReady || !currentDoc) return;
+    if (!isLocationsReady) return;
     
     try {
       const currentLocation = rendition.currentLocation();
@@ -108,7 +98,7 @@ function startAutoSave() {
           epub_name: bookName,
           last_cfi: cfi,
           last_percentage: percentage,
-          scroll_position: scrollTop, // 🔑 Nouvelle colonne
+          scroll_position: scrollTop,
           last_opened: new Date().toISOString()
         }, { 
           onConflict: 'epub_name' 
@@ -170,14 +160,27 @@ let positionToRestore = null;
 
 // 2. Restaure le scroll exact après le rendu
 rendition.on("relocated", (location) => {
-  // Attend que le DOM soit prêt
-  setTimeout(() => {
-    if (positionToRestore && currentDoc) {
-      console.log(`🎯 Restauration du scroll à ${positionToRestore.scrollTop}px`);
-      setScrollPosition(positionToRestore.scrollTop);
-      positionToRestore = null; // Ne restaure qu'une seule fois
-    }
-  }, 100); // Petit délai pour s'assurer que le DOM est complètement chargé
+  if (positionToRestore) {
+    // Attend que le container soit prêt et que le contenu soit chargé
+    const attemptRestore = (attempts = 0) => {
+      const container = getEpubContainer();
+      
+      if (!container && attempts < 10) {
+        // Le container n'existe pas encore, réessaye
+        setTimeout(() => attemptRestore(attempts + 1), 100);
+        return;
+      }
+      
+      if (container) {
+        console.log(`🎯 Restauration du scroll à ${positionToRestore.scrollTop}px`);
+        setScrollPosition(positionToRestore.scrollTop);
+        positionToRestore = null; // Ne restaure qu'une seule fois
+      }
+    };
+    
+    // Attend un peu que tout soit chargé (styles, images, etc.)
+    setTimeout(() => attemptRestore(), 300);
+  }
 });
 
 // --- Navigation tactile ---
@@ -200,7 +203,7 @@ document.addEventListener('keydown', (e) => {
 
 // --- Sauvegarde avant fermeture ---
 window.addEventListener('beforeunload', async () => {
-  if (!isLocationsReady || !currentDoc) return;
+  if (!isLocationsReady) return;
   
   const currentLocation = rendition.currentLocation();
   if (!currentLocation || !currentLocation.start) return;
@@ -219,4 +222,3 @@ window.addEventListener('beforeunload', async () => {
       onConflict: 'epub_name' 
     });
 });
-
