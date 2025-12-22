@@ -21,6 +21,12 @@ const rendition = book.renderTo(readerEl, {
 // 🔑 MODE FIABLE
 rendition.flow("scrolled");
 
+rendition.hooks.content.register((contents) => {
+  const doc = contents.document;
+  doc.body.style.fontSize = "200%";
+  doc.body.style.lineHeight = "1.6";
+});
+
 // --- Restaurer la position ---
 (async () => {
   const { data, error } = await supabaseClient
