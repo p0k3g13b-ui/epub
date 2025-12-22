@@ -2,12 +2,15 @@ body {
   font-family: Arial, sans-serif;
   padding: 20px;
   margin: 0;
+  background-color: #f5f5f5;
 }
 
 h1 {
   margin-bottom: 20px;
+  color: #333;
 }
 
+/* Page d'accueil */
 #epub-list {
   display: flex;
   flex-wrap: wrap;
@@ -16,30 +19,90 @@ h1 {
 
 .epub-item {
   width: 200px;
-  height: 250px;
+  height: 280px;
   border: 1px solid #ccc;
   cursor: pointer;
   overflow: hidden;
   background-color: #fff;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 8px;
+  position: relative;
+}
+
+.epub-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.epub-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  font-size: 14px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .epub-item iframe {
   pointer-events: none;
 }
 
+/* Lecteur */
 #reader {
   width: 100vw;
   height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: white;
 }
+
+/* Zones de navigation tactile */
 #swipe-left, #swipe-right {
-  position: absolute;
+  position: fixed;
   top: 0;
   bottom: 0;
-  width: 30%; /* ou ce que tu veux */
+  width: 30%;
   z-index: 10;
+  cursor: pointer;
 }
 
-#swipe-left { left: 0; }
-#swipe-right { right: 0; }
+#swipe-left { 
+  left: 0; 
+}
 
+#swipe-right { 
+  right: 0; 
+}
+
+/* Indicateurs visuels au survol (optionnel) */
+#swipe-left:hover {
+  background: linear-gradient(to right, rgba(0,0,0,0.05), transparent);
+}
+
+#swipe-right:hover {
+  background: linear-gradient(to left, rgba(0,0,0,0.05), transparent);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  
+  .epub-item {
+    width: 150px;
+    height: 220px;
+  }
+  
+  #swipe-left, #swipe-right {
+    width: 40%;
+  }
+}
