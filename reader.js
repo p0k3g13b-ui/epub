@@ -30,6 +30,18 @@ let saveInterval = null;
 let isLocationsReady = false;
 let currentDoc = null;
 
+// Ajoute après la ligne "let currentDoc = null;"
+setInterval(() => {
+  if (currentDoc) {
+    console.log("🔍 DEBUG Scroll positions:", {
+      docElement: currentDoc.documentElement?.scrollTop,
+      body: currentDoc.body?.scrollTop,
+      // Teste aussi le parent iframe
+      iframe: currentDoc.defaultView?.frameElement?.scrollTop
+    });
+  }
+}, 3000); // Log toutes les 3 secondes
+
 // --- Génération des locations ---
 book.ready.then(() => {
   return book.locations.generate(1500);
@@ -206,3 +218,4 @@ window.addEventListener('beforeunload', async () => {
       onConflict: 'epub_name' 
     });
 });
+
