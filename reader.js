@@ -18,8 +18,46 @@ const rendition = book.renderTo(readerEl, {
   spread: "none"
 });
 
+(async () => {
+  await book.ready;
+  await book.locations.generate(1500);
+})();
+
 // 🔑 MODE FIABLE
 rendition.flow("scrolled");
+
+let saveInterval = null;
+
+rendition.hooks.content.register(contents => {
+  const doc = contents.document;
+
+  if (saveInterval) return;
+
+  saveInterval = setInterval(() => {
+    const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
+    const scrollHeight = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+    const clientHeight = doc.documentElement.clientHeight || doc.body.clientHeight;
+
+    if (!scrollHeight) return;
+
+    const percentage = scrollTop / (scrollHeight - clientHeight);
+    if (percentage < 0 || percentage > 1) return;
+
+    const cfi = book.locations.cfiFromPercentage(percentage);
+    if (!cfi) return;
+
+    supabaseClient
+      .from('reading_positions')
+      .upsert({
+        epub_name: bookName,
+        last_cfi: cfi,
+        last_percentage: percentage,
+        last_opened: new Date().toISOString()
+      }, { onConflict: 'epub_name' });
+
+  }, 1000);
+});
+
 
 rendition.hooks.content.register((contents) => {
   const doc = contents.document;
@@ -49,22 +87,6 @@ rendition.hooks.content.register((contents) => {
     rendition.display();
   }
 })();
-
-// --- Sauvegarde précise ---
-rendition.on('relocated', async (location) => {
-  if (!location?.start?.cfi) return;
-
-  await supabaseClient
-    .from('reading_positions')
-    .upsert(
-      {
-        epub_name: bookName,
-        last_cfi: location.start.cfi,
-        last_opened: new Date().toISOString()
-      },
-      { onConflict: 'epub_name' }
-    );
-});
 
 document.getElementById('swipe-left').addEventListener('click', () => rendition.prev());
 document.getElementById('swipe-right').addEventListener('click', () => rendition.next());
