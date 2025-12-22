@@ -32,16 +32,17 @@ let currentDoc = null;
 
 // Ajoute après la ligne "let currentDoc = null;"
 setInterval(() => {
-  if (currentDoc) {
-    console.log("🔍 DEBUG Scroll positions:", {
-      docElement: currentDoc.documentElement?.scrollTop,
-      body: currentDoc.body?.scrollTop,
-      // Teste aussi le parent iframe
-      iframe: currentDoc.defaultView?.frameElement?.scrollTop
-    });
-  }
-}, 3000); // Log toutes les 3 secondes
-
+  console.log("🔍 DEBUG Scroll positions:", {
+    reader: document.getElementById('reader')?.scrollTop,
+    epubContainer: document.querySelector('.epub-container')?.scrollTop,
+    epubView: document.querySelector('.epub-view')?.scrollTop,
+    // Cherche tous les divs avec un scroll
+    allScrollable: Array.from(document.querySelectorAll('div')).map(div => ({
+      className: div.className,
+      scrollTop: div.scrollTop
+    })).filter(x => x.scrollTop > 0)
+  });
+}, 3000);
 // --- Génération des locations ---
 book.ready.then(() => {
   return book.locations.generate(1500);
