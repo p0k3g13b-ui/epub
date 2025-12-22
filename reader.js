@@ -26,6 +26,7 @@ const rendition = book.renderTo(readerEl, {
 // 🔑 MODE FIABLE
 rendition.flow("scrolled");
 
+//sauvegarde de position
 let saveInterval = null;
 
 rendition.hooks.content.register(contents => {
