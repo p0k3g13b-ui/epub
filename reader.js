@@ -19,7 +19,7 @@ const rendition = book.renderTo(readerEl, {
 });
 
 // 🔑 MODE FIABLE
-rendition.flow("paginated");
+rendition.flow("scrolled");
 
 // --- Restaurer la position ---
 (async () => {
