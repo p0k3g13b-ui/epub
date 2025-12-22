@@ -23,9 +23,17 @@ rendition.flow("scrolled");
 
 rendition.hooks.content.register((contents) => {
   const doc = contents.document;
-  doc.body.style.fontSize = "200%";
-  doc.body.style.lineHeight = "1.6";
+
+  const style = doc.createElement("style");
+  style.textContent = `
+    body {
+      font-size: 200% !important;
+      line-height: 1.6 !important;
+    }
+  `;
+  doc.head.appendChild(style);
 });
+
 
 // --- Restaurer la position ---
 (async () => {
