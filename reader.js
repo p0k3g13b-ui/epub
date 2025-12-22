@@ -66,31 +66,5 @@ rendition.on('relocated', async (location) => {
     );
 });
 
-let touchStartX = 0;
-let touchEndX = 0;
-
-readerEl.addEventListener('touchstart', e => {
-  touchStartX = e.changedTouches[0].screenX;
-}, false);
-
-readerEl.addEventListener('touchend', e => {
-  touchEndX = e.changedTouches[0].screenX;
-  handleGesture();
-}, false);
-
-function handleGesture() {
-  const delta = touchEndX - touchStartX;
-  if (Math.abs(delta) > 5) { // seuil de swipe
-    if (delta > 0) {
-      // swipe à droite → chapitre précédent
-      rendition.prev();
-    } else {
-      // swipe à gauche → chapitre suivant
-      rendition.next();
-    }
-  }
-}
-
-// --- Boutons ---
-document.getElementById('prev-button').onclick = () => rendition.prev();
-document.getElementById('next-button').onclick = () => rendition.next();
+document.getElementById('swipe-left').addEventListener('click', () => rendition.prev());
+document.getElementById('swipe-right').addEventListener('click', () => rendition.next());
