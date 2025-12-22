@@ -16,7 +16,6 @@ const rendition = book.renderTo(readerEl, {
   width: "100%",
   height: "100%",
   spread: "none"
-  allowScriptedContent: true
 });
 
 (async () => {
