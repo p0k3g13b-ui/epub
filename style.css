@@ -32,3 +32,14 @@ h1 {
   width: 100vw;
   height: 100vh;
 }
+#swipe-left, #swipe-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%; /* ou ce que tu veux */
+  z-index: 10;
+}
+
+#swipe-left { left: 0; }
+#swipe-right { right: 0; }
+
