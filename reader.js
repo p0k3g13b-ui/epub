@@ -21,14 +21,6 @@ const rendition = book.renderTo(readerEl, {
 // 🔑 MODE FIABLE
 rendition.flow("scrolled");
 
-// Exemple : augmenter la taille du texte à 120%
-rendition.themes.default({
-  "body": {
-    "font-size": "200%",
-    "line-height": "1.6"
-  }
-});
-
 // --- Restaurer la position ---
 (async () => {
   const { data, error } = await supabaseClient
