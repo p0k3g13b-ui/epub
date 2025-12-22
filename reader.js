@@ -6,28 +6,24 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 // --- Params ---
 const params = new URLSearchParams(window.location.search);
 const bookName = params.get('book');
-if (!bookName) throw new Error("No book");
+if (!bookName) throw new Error("No book specified");
 
 // --- Reader ---
 const readerEl = document.getElementById('reader');
+
 const book = ePub(`epubs/${bookName}`);
 const rendition = book.renderTo(readerEl, {
   width: "100%",
-  height: "100%"
+  height: "100%",
+  spread: "none"
 });
 
-rendition.flow("scrolled");
+// 🔑 MODE FIABLE
+rendition.flow("paginated");
 
-// Nettoyage marges
-rendition.hooks.content.register(contents => {
-  const doc = contents.document;
-  doc.body.style.margin = '0';
-  doc.body.style.padding = '0';
-});
-
-// 🔑 RESTAURATION AU BON MOMENT
-book.ready.then(async () => {
-  const { data } = await supabaseClient
+// --- Restaurer la position ---
+(async () => {
+  const { data, error } = await supabaseClient
     .from('reading_positions')
     .select('last_cfi')
     .eq('epub_name', bookName)
@@ -38,22 +34,24 @@ book.ready.then(async () => {
   } else {
     rendition.display();
   }
-});
+})();
 
-// ✅ SAUVEGARDE FIABLE
-rendition.on('relocated', (location) => {
+// --- Sauvegarde précise ---
+rendition.on('relocated', async (location) => {
   if (!location?.start?.cfi) return;
 
-  supabaseClient
+  await supabaseClient
     .from('reading_positions')
-    .upsert({
-      epub_name: bookName,
-      last_cfi: location.start.cfi,
-      last_percentage: location.start.percentage,
-      last_opened: new Date().toISOString()
-    }, { onConflict: 'epub_name' });
+    .upsert(
+      {
+        epub_name: bookName,
+        last_cfi: location.start.cfi,
+        last_opened: new Date().toISOString()
+      },
+      { onConflict: 'epub_name' }
+    );
 });
 
-// Boutons
+// --- Boutons ---
 document.getElementById('prev-button').onclick = () => rendition.prev();
 document.getElementById('next-button').onclick = () => rendition.next();
