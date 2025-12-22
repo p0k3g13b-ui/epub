@@ -51,6 +51,13 @@ rendition.on('relocated', async (location) => {
       { onConflict: 'epub_name' }
     );
 });
+// Exemple : augmenter la taille du texte à 120%
+rendition.themes.default({
+  "body": {
+    "font-size": "200%",
+    "line-height": "1.6"
+  }
+});
 
 // --- Boutons ---
 document.getElementById('prev-button').onclick = () => rendition.prev();
