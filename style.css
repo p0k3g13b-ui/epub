@@ -62,6 +62,7 @@ h1 {
   top: 0;
   left: 0;
   background: white;
+  margin: 5%;
 }
 
 /* Zones de navigation tactile */
@@ -106,5 +107,6 @@ h1 {
     width: 40%;
   }
 }
+
 
 
