@@ -5,16 +5,27 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // --- Params ---
 const params = new URLSearchParams(window.location.search);
-const bookName = params.get('book');
-if (!bookName) {
+const bookFilename = params.get('book'); // Maintenant c'est juste le filename
+if (!bookFilename) {
   alert("Aucun livre spécifié");
   window.location.href = 'index.html';
   throw new Error("No book specified");
 }
 
+// --- Récupère l'URL du livre depuis Supabase Storage ---
+const { data: urlData } = supabaseClient.storage
+  .from('epubs')
+  .getPublicUrl(bookFilename);
+
+if (!urlData || !urlData.publicUrl) {
+  alert("Impossible de charger le livre");
+  window.location.href = 'index.html';
+  throw new Error("Could not get book URL");
+}
+
 // --- Reader Setup ---
 const readerEl = document.getElementById('reader');
-const book = ePub(`epubs/${bookName}`);
+const book = ePub(urlData.publicUrl); // Charge depuis Supabase Storage
 const rendition = book.renderTo(readerEl, {
   width: "100%",
   height: "100%",
@@ -56,16 +67,16 @@ rendition.hooks.content.register((contents) => {
 
 // --- Fonction pour obtenir le container de scroll ---
 function getEpubContainer() {
-  if (!epubContainer) {
-    epubContainer = document.querySelector('.epub-container');
-  }
+  // Cherche à chaque fois au cas où le DOM change
+  epubContainer = document.querySelector('.epub-container');
   return epubContainer;
 }
 
 // --- Fonction pour obtenir la position de scroll ---
 function getScrollPosition() {
   const container = getEpubContainer();
-  return container ? container.scrollTop : 0;
+  const scrollTop = container ? container.scrollTop : 0;
+  return Math.round(scrollTop); // ✅ Arrondi pour éviter l'erreur SQL
 }
 
 // --- Fonction pour définir la position de scroll ---
@@ -91,11 +102,16 @@ function startAutoSave() {
       const percentage = currentLocation.start.percentage || 0;
       const scrollTop = getScrollPosition();
       
+      // Debug : vérifie qu'on lit bien une vraie valeur
+      if (scrollTop === 0) {
+        console.warn("⚠️ ScrollTop = 0, container existe ?", !!getEpubContainer());
+      }
+      
       // Sauvegarde dans Supabase avec la position de scroll
       const { error } = await supabaseClient
         .from('reading_positions')
         .upsert({
-          epub_name: bookName,
+          epub_name: bookFilename, // Utilise le filename
           last_cfi: cfi,
           last_percentage: percentage,
           scroll_position: scrollTop,
@@ -117,7 +133,14 @@ function startAutoSave() {
 
 // Démarre la sauvegarde automatique
 rendition.on("rendered", () => {
-  startAutoSave();
+  // Attend que le container existe avant de démarrer l'auto-save
+  const waitForContainer = setInterval(() => {
+    if (getEpubContainer()) {
+      clearInterval(waitForContainer);
+      console.log("✅ Container trouvé, démarrage de l'auto-save");
+      startAutoSave();
+    }
+  }, 100);
 });
 
 // --- Restauration de la position ---
@@ -129,7 +152,7 @@ let positionToRestore = null;
     const { data, error } = await supabaseClient
       .from('reading_positions')
       .select('last_cfi, last_percentage, scroll_position')
-      .eq('epub_name', bookName)
+      .eq('epub_name', bookFilename) // Utilise le filename
       .single();
     
     if (error && error.code !== 'PGRST116') {
@@ -213,7 +236,7 @@ window.addEventListener('beforeunload', async () => {
   await supabaseClient
     .from('reading_positions')
     .upsert({
-      epub_name: bookName,
+      epub_name: bookFilename, // Utilise le filename
       last_cfi: currentLocation.start.cfi,
       last_percentage: currentLocation.start.percentage || 0,
       scroll_position: scrollTop,
