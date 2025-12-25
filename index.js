@@ -5,7 +5,7 @@ const epubs = [
   "Le parfum.epub",
   "Entre deux mondes.epub",
   "L'ame du mal.epub",
-  "In tenebris -- Chattam, Maxime -- Trilogie du mal #2, 2003 -- Alexandriz -- 9336bf21954bbcfc47b3f3777db827c2 -- Anna’s Archive.epub"
+  "In tenebris.epub"
 ];
 
 epubs.forEach(async (name) => {
@@ -34,6 +34,7 @@ epubs.forEach(async (name) => {
   container.appendChild(title);
   epubListEl.appendChild(container);
 });
+
 
 
 
