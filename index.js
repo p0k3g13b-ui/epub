@@ -91,9 +91,13 @@ async function displayBook(book) {
   
   // Récupère l'URL publique du fichier depuis Supabase Storage
   const { data: urlData } = supabaseClient.storage
-    .from('epubs')
-    .getPublicUrl(book.filename);
-  
+  .from('epubs')
+  .getPublicUrl(book.filename);
+
+// DEBUG
+console.log("🔍 Test URL pour:", book.filename);
+console.log("   urlData:", urlData);
+console.log("   publicUrl:", urlData?.publicUrl);
   if (!urlData || !urlData.publicUrl) {
     console.error("❌ Impossible de récupérer l'URL pour:", book.filename);
     return;
@@ -123,3 +127,4 @@ async function displayBook(book) {
     console.error("❌ Erreur affichage livre:", book.title, err);
   }
 }
+
