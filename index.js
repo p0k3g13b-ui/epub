@@ -91,21 +91,20 @@ async function displayBook(book) {
   
   // Récupère l'URL publique du fichier depuis Supabase Storage
   const { data: urlData } = supabaseClient.storage
-  .from('epubs')
-  .getPublicUrl(book.filename);
-
-// DEBUG
-console.log("🔍 Test URL pour:", book.filename);
-console.log("   urlData:", urlData);
-console.log("   publicUrl:", urlData?.publicUrl);
-  if (!urlData || !urlData.publicUrl) {
+    .from('epubs')
+    .getPublicUrl(book.filename);
+  
+  // L'API retourne publicURL (majuscules) pas publicUrl
+  const publicUrl = urlData?.publicURL || urlData?.publicUrl;
+  
+  if (!publicUrl) {
     console.error("❌ Impossible de récupérer l'URL pour:", book.filename);
     return;
   }
   
   try {
     // Crée un aperçu de la première page
-    const epubBook = ePub(urlData.publicUrl);
+    const epubBook = ePub(publicUrl);
     const rendition = epubBook.renderTo(container, { 
       width: 200, 
       height: 220 
@@ -127,4 +126,3 @@ console.log("   publicUrl:", urlData?.publicUrl);
     console.error("❌ Erreur affichage livre:", book.title, err);
   }
 }
-
