@@ -68,7 +68,7 @@ const epubListEl = document.getElementById('epub-list');
     
     console.log("📊 Ordre d'affichage:", sortedBooks.map(b => b.title));
     
-    // 5. Affiche les livres
+    // 5. Affiche les livres UN PAR UN (pas en parallèle)
     for (const book of sortedBooks) {
       await displayBook(book);
     }
@@ -114,25 +114,35 @@ async function displayBook(book) {
     
     const rendition = epubBook.renderTo(container, { 
       width: 200, 
-      height: 220 
+      height: 220,
+      flow: "paginated",
+      manager: "default"
     });
     
-    rendition.flow("paginated");
+    // Timeout de sécurité : si ça ne charge pas en 5 secondes, on abandonne
+    const displayPromise = rendition.display(0);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Timeout")), 5000)
+    );
     
-    // Attend que la première page soit affichée
-    await rendition.display(0);
+    await Promise.race([displayPromise, timeoutPromise]);
     console.log("✅ Première page affichée:", book.title);
     
-    // Événement clic
-    container.addEventListener('click', () => {
-      // Passe le filename en paramètre au lieu du nom complet
-      window.location.href = `reader.html?book=${encodeURIComponent(book.filename)}`;
-    });
-    
-    container.appendChild(title);
-    epubListEl.appendChild(container);
-    
   } catch (err) {
-    console.error("❌ Erreur affichage livre:", book.title, err);
+    console.warn("⚠️ Impossible d'afficher l'aperçu pour:", book.title, err.message);
+    // Affiche quand même le livre avec juste le titre (sans aperçu)
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
   }
+  
+  // Ajoute le titre et le gestionnaire de clic dans tous les cas
+  container.appendChild(title);
+  
+  container.addEventListener('click', () => {
+    window.location.href = `reader.html?book=${encodeURIComponent(book.filename)}`;
+  });
+  
+  epubListEl.appendChild(container);
 }
