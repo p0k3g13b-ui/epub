@@ -1,148 +1,126 @@
-// --- Supabase ---
-const supabaseUrl = 'https://qtqkbuvmbakiheqcyxed.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cWtidXZtYmFraWhlcWN5eGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwOTEwMDEsImV4cCI6MjA4MTY2NzAwMX0.fzWkuVmQB770dwGKeLMFGG6EwIwZqlC_aCcZI7EBQUA';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+# 📸 Guide d'ajout des couvertures
 
-const epubListEl = document.getElementById('epub-list');
+## 🎯 Objectif
+Ajouter des images de couverture pour tes livres afin qu'elles s'affichent sur la page d'accueil.
 
-// Fonction pour charger et afficher les livres
-(async () => {
-  try {
-    // 1. Récupère tous les livres depuis la table books
-    const { data: books, error: booksError } = await supabaseClient
-      .from('books')
-      .select('*')
-      .order('added_date', { ascending: false }); // Par défaut, les plus récents d'abord
-    
-    if (booksError) {
-      console.error("❌ Erreur chargement livres:", booksError);
-      epubListEl.innerHTML = '<p>Erreur lors du chargement des livres.</p>';
-      return;
-    }
-    
-    if (!books || books.length === 0) {
-      epubListEl.innerHTML = '<p>Aucun livre dans la bibliothèque. Ajoutez-en via l\'onglet Recherche !</p>';
-      return;
-    }
-    
-    console.log("📚 Livres chargés:", books.length);
-    
-    // 2. Récupère les positions de lecture pour le tri
-    const { data: positions, error: positionsError } = await supabaseClient
-      .from('reading_positions')
-      .select('epub_name, last_opened');
-    
-    if (positionsError) {
-      console.warn("⚠️ Erreur positions (non bloquant):", positionsError);
-    }
-    
-    // 3. Crée un map filename → date de dernière ouverture
-    const lastOpenedMap = {};
-    if (positions) {
-      positions.forEach(p => {
-        lastOpenedMap[p.epub_name] = new Date(p.last_opened);
-      });
-    }
-    
-    console.log("📅 Positions de lecture:", Object.keys(lastOpenedMap).length);
-    
-    // 4. Trie les livres : récemment lus en premier
-    const sortedBooks = [...books].sort((a, b) => {
-      const dateA = lastOpenedMap[a.filename];
-      const dateB = lastOpenedMap[b.filename];
-      
-      // Si aucun n'a été ouvert, ordre par date d'ajout (plus récent d'abord)
-      if (!dateA && !dateB) {
-        return new Date(b.added_date) - new Date(a.added_date);
-      }
-      
-      // Si seulement A n'a pas été ouvert, B avant A
-      if (!dateA) return 1;
-      
-      // Si seulement B n'a pas été ouvert, A avant B
-      if (!dateB) return -1;
-      
-      // Les deux ont été ouverts, le plus récent en premier
-      return dateB - dateA;
-    });
-    
-    console.log("📊 Ordre d'affichage:", sortedBooks.map(b => b.title));
-    
-    // 5. Affiche les livres UN PAR UN (pas en parallèle)
-    for (const book of sortedBooks) {
-      await displayBook(book);
-    }
-    
-  } catch (err) {
-    console.error("❌ Erreur fatale:", err);
-    epubListEl.innerHTML = '<p>Erreur lors du chargement.</p>';
-  }
-})();
+---
 
-// Fonction pour afficher un livre
-async function displayBook(book) {
-  const container = document.createElement('div');
-  container.className = 'epub-item';
-  
-  // Ajoute le titre
-  const title = document.createElement('div');
-  title.className = 'epub-title';
-  title.textContent = book.title;
-  
-  // Récupère l'URL publique du fichier depuis Supabase Storage
-  const { data: urlData } = supabaseClient.storage
-    .from('epubs')
-    .getPublicUrl(book.filename);
-  
-  // L'API retourne publicURL (majuscules) pas publicUrl
-  const publicUrl = urlData?.publicURL || urlData?.publicUrl;
-  
-  if (!publicUrl) {
-    console.error("❌ Impossible de récupérer l'URL pour:", book.filename);
-    return;
-  }
-  
-  try {
-    // Crée un aperçu de la première page
-    console.log("📖 Chargement de:", book.title, "URL:", publicUrl);
-    
-    const epubBook = ePub(publicUrl);
-    
-    // Attend que le livre soit prêt
-    await epubBook.ready;
-    console.log("✅ Livre prêt:", book.title);
-    
-    const rendition = epubBook.renderTo(container, { 
-      width: 200, 
-      height: 220,
-      flow: "paginated",
-      manager: "default"
-    });
-    
-    // Timeout de sécurité : si ça ne charge pas en 5 secondes, on abandonne
-    const displayPromise = rendition.display(0);
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Timeout")), 5000)
-    );
-    
-    await Promise.race([displayPromise, timeoutPromise]);
-    console.log("✅ Première page affichée:", book.title);
-    
-  } catch (err) {
-    console.warn("⚠️ Impossible d'afficher l'aperçu pour:", book.title, err.message);
-    // Affiche quand même le livre avec juste le titre (sans aperçu)
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-    container.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-  }
-  
-  // Ajoute le titre et le gestionnaire de clic dans tous les cas
-  container.appendChild(title);
-  
-  container.addEventListener('click', () => {
-    window.location.href = `reader.html?book=${encodeURIComponent(book.filename)}`;
-  });
-  
-  epubListEl.appendChild(container);
-}
+## 📋 Méthode 1 : Upload dans Supabase Storage (recommandé)
+
+### Étape 1 : Télécharge les images de couverture
+
+Pour chaque livre, trouve une image :
+- **Google Images** : Cherche "nom du livre + cover"
+- **Amazon** : Page du livre → clic droit sur la couverture → "Enregistrer l'image sous"
+- **Goodreads** : Même méthode
+- Format recommandé : JPG ou PNG, environ 400x600 pixels
+
+### Étape 2 : Upload dans Supabase
+
+1. Va dans **Storage** → clique sur bucket `epubs`
+2. Clique **Upload file**
+3. Sélectionne l'image de couverture
+4. Nomme-la de façon claire : `lamal-cover.jpg`, `intenebris-cover.jpg`, etc.
+
+### Étape 3 : Récupère l'URL
+
+1. Dans le bucket `epubs`, clique sur l'image que tu viens d'uploader
+2. Copie l'URL publique (quelque chose comme : `https://qtqkbuvmbakiheqcyxed.supabase.co/storage/v1/object/public/epubs/lamal-cover.jpg`)
+
+### Étape 4 : Ajoute l'URL dans la table `books`
+
+1. Va dans **Table Editor** → table `books`
+2. Trouve la ligne du livre correspondant
+3. Clique sur le crayon ✏️ pour éditer
+4. Dans le champ `cover_url`, colle l'URL que tu as copiée
+5. **Save**
+
+### Étape 5 : Rafraîchis ton site
+
+Les couvertures devraient maintenant s'afficher ! 🎉
+
+---
+
+## 📋 Méthode 2 : Utiliser des URLs externes (plus rapide)
+
+Si tu ne veux pas uploader dans Supabase, tu peux utiliser des URLs externes :
+
+### Étape 1 : Trouve l'URL d'une image en ligne
+
+1. Cherche le livre sur Google Images
+2. Clic droit sur la couverture → **"Copier l'adresse de l'image"**
+3. Tu obtiens une URL genre : `https://m.media-amazon.com/images/I/51abc123.jpg`
+
+### Étape 2 : Ajoute l'URL dans la table
+
+1. **Table Editor** → table `books`
+2. Édite la ligne
+3. Colle l'URL dans `cover_url`
+4. **Save**
+
+⚠️ **Attention** : Les URLs externes peuvent expirer ou changer.
+
+---
+
+## 🎨 Si tu n'as pas de couverture
+
+Pas de problème ! Si `cover_url` est vide (NULL), le site affichera automatiquement :
+- Un fond dégradé violet/bleu stylé
+- Une icône de livre 📚
+- Le titre reste visible
+
+---
+
+## 📝 Exemple complet
+
+Pour le livre "L'âme du mal" :
+
+**Dans la table `books` :**
+```
+id: 123...
+title: L'âme du mal
+author: Maxime Chattam
+filename: lamal.epub
+cover_url: https://qtqkbuvmbakiheqcyxed.supabase.co/storage/v1/object/public/epubs/lamal-cover.jpg
+```
+
+**Résultat sur le site :**
+- Une belle image de couverture s'affiche
+- Titre en bas : "L'âme du mal"
+- Cliquable pour lire le livre
+
+---
+
+## 🐛 Dépannage
+
+### La couverture ne s'affiche pas
+- Vérifie que l'URL est correcte (copie-la dans le navigateur)
+- Vérifie qu'il n'y a pas d'espace avant/après l'URL
+- Si image dans Supabase : vérifie que le bucket est public
+
+### Image déformée
+- Utilise des images avec ratio ~2:3 (portrait)
+- Dimensions recommandées : 400x600 ou 600x900 pixels
+
+### Image floue
+- Utilise une image plus grande (minimum 400px de largeur)
+
+---
+
+## ✅ Checklist
+
+Pour chaque livre :
+- [ ] Trouver une image de couverture de bonne qualité
+- [ ] L'uploader dans Supabase Storage OU récupérer une URL externe
+- [ ] Copier l'URL publique
+- [ ] La coller dans le champ `cover_url` de la table `books`
+- [ ] Sauvegarder
+- [ ] Rafraîchir le site pour vérifier
+
+---
+
+## 🚀 Prochaine étape
+
+Une fois les couvertures ajoutées, la **Phase 1** sera complète !
+
+On pourra passer à la **Phase 2** : Backend de recherche Anna's Archive 🎯
