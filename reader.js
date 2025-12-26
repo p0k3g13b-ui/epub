@@ -17,7 +17,10 @@ const { data: urlData } = supabaseClient.storage
   .from('epubs')
   .getPublicUrl(bookFilename);
 
-if (!urlData || !urlData.publicUrl) {
+// L'API retourne publicURL (majuscules) pas publicUrl
+const publicUrl = urlData?.publicURL || urlData?.publicUrl;
+
+if (!publicUrl) {
   alert("Impossible de charger le livre");
   window.location.href = 'index.html';
   throw new Error("Could not get book URL");
@@ -25,7 +28,7 @@ if (!urlData || !urlData.publicUrl) {
 
 // --- Reader Setup ---
 const readerEl = document.getElementById('reader');
-const book = ePub(urlData.publicUrl); // Charge depuis Supabase Storage
+const book = ePub(publicUrl); // Charge depuis Supabase Storage
 const rendition = book.renderTo(readerEl, {
   width: "100%",
   height: "100%",
