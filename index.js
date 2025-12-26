@@ -104,14 +104,24 @@ async function displayBook(book) {
   
   try {
     // Crée un aperçu de la première page
+    console.log("📖 Chargement de:", book.title, "URL:", publicUrl);
+    
     const epubBook = ePub(publicUrl);
+    
+    // Attend que le livre soit prêt
+    await epubBook.ready;
+    console.log("✅ Livre prêt:", book.title);
+    
     const rendition = epubBook.renderTo(container, { 
       width: 200, 
       height: 220 
     });
     
     rendition.flow("paginated");
-    await rendition.display(0); // Première page
+    
+    // Attend que la première page soit affichée
+    await rendition.display(0);
+    console.log("✅ Première page affichée:", book.title);
     
     // Événement clic
     container.addEventListener('click', () => {
