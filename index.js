@@ -5,8 +5,11 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 const epubListEl = document.getElementById('epub-list');
 
-// Fonction pour charger et afficher les livres
-(async () => {
+// Fonction globale pour charger la bibliothèque (appelée depuis search.js)
+window.loadLibrary = async function() {
+  // Vide la liste avant de recharger
+  epubListEl.innerHTML = '';
+  
   try {
     // 1. Récupère tous les livres depuis la table books
     const { data: books, error: booksError } = await supabaseClient
@@ -77,7 +80,10 @@ const epubListEl = document.getElementById('epub-list');
     console.error("❌ Erreur fatale:", err);
     epubListEl.innerHTML = '<p>Erreur lors du chargement.</p>';
   }
-})();
+};
+
+// Charge la bibliothèque au démarrage
+window.loadLibrary();
 
 // Fonction pour afficher un livre
 async function displayBook(book) {
