@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EpubReader</title>
   <!-- JSZip -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -12,7 +13,41 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="epub-list"></div>
+  <!-- Navigation par onglets -->
+  <div class="tabs">
+    <button class="tab-button active" data-tab="library">📚 Ma Bibliothèque</button>
+    <button class="tab-button" data-tab="search">🔍 Rechercher</button>
+  </div>
+
+  <!-- Contenu de l'onglet Bibliothèque -->
+  <div id="library-tab" class="tab-content active">
+    <div id="epub-list"></div>
+  </div>
+
+  <!-- Contenu de l'onglet Recherche -->
+  <div id="search-tab" class="tab-content">
+    <div class="search-container">
+      <div class="search-header">
+        <h2>Rechercher sur Anna's Archive</h2>
+        <p class="search-subtitle">Recherchez des EPUBs et ajoutez-les à votre bibliothèque</p>
+      </div>
+      
+      <div class="search-box">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Titre, auteur, ISBN..."
+          autocomplete="off"
+        >
+        <button id="search-button">Rechercher</button>
+      </div>
+
+      <div id="search-status"></div>
+      <div id="search-results"></div>
+    </div>
+  </div>
+
   <script src="index.js"></script>
+  <script src="search.js"></script>
 </body>
 </html>
