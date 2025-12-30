@@ -1,7 +1,36 @@
-// --- Supabase ---
-const supabaseUrl = 'https://qtqkbuvmbakiheqcyxed.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0cWtidXZtYmFraWhlcWN5eGVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwOTEwMDEsImV4cCI6MjA4MTY2NzAwMX0.fzWkuVmQB770dwGKeLMFGG6EwIwZqlC_aCcZI7EBQUA';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+// --- Vérification de l'authentification ---
+let currentUser = null;
+
+(async () => {
+  try {
+    currentUser = await requireAuth();
+    console.log('✅ Utilisateur connecté:', currentUser);
+    
+    // Affiche le nom d'utilisateur et le bouton de déconnexion
+    displayUserInfo(currentUser);
+    
+    // Charge la bibliothèque
+    window.loadLibrary();
+  } catch (err) {
+    console.error('Erreur auth:', err);
+    // requireAuth redirige déjà
+  }
+})();
+
+// Fonction pour afficher les infos utilisateur
+function displayUserInfo(user) {
+  const tabs = document.querySelector('.tabs');
+  
+  // Crée le conteneur d'infos utilisateur
+  const userInfo = document.createElement('div');
+  userInfo.className = 'user-info';
+  userInfo.innerHTML = `
+    <span class="username">👤 ${user.username || user.email}</span>
+    <button class="logout-btn" onclick="logout()">🚪 Déconnexion</button>
+  `;
+  
+  tabs.appendChild(userInfo);
+}
 
 const epubListEl = document.getElementById('epub-list');
 
@@ -9,87 +38,110 @@ const epubListEl = document.getElementById('epub-list');
 window.loadLibrary = async function() {
   // Vide la liste avant de recharger
   epubListEl.innerHTML = '';
-  
+
+  if (!currentUser) {
+    epubListEl.innerHTML = '<p>Erreur : utilisateur non connecté</p>';
+    return;
+  }
+
   try {
-    // 1. Récupère tous les livres depuis la table books
-    const { data: books, error: booksError } = await supabaseClient
-      .from('books')
-      .select('*')
-      .order('added_date', { ascending: false }); // Par défaut, les plus récents d'abord
-    
+    // 1. Récupère les livres de l'utilisateur via user_books + epubs_library
+    const { data: userBooks, error: booksError } = await supabaseClient
+      .from('user_books')
+      .select(`
+        id,
+        added_at,
+        epubs_library (
+          id,
+          title,
+          author,
+          filename,
+          cover_url,
+          file_size,
+          language,
+          year
+        )
+      `)
+      .eq('user_id', currentUser.id)
+      .order('added_at', { ascending: false });
+
     if (booksError) {
       console.error("❌ Erreur chargement livres:", booksError);
       epubListEl.innerHTML = '<p>Erreur lors du chargement des livres.</p>';
       return;
     }
-    
-    if (!books || books.length === 0) {
-      epubListEl.innerHTML = '<p>Aucun livre dans la bibliothèque. Ajoutez-en via l\'onglet Recherche !</p>';
+
+    if (!userBooks || userBooks.length === 0) {
+      epubListEl.innerHTML = '<p>Aucun livre dans votre bibliothèque. Ajoutez-en via l\'onglet Recherche !</p>';
       return;
     }
-    
-    console.log("📚 Livres chargés:", books.length);
-    
+
+    console.log("📚 Livres chargés:", userBooks.length);
+
     // 2. Récupère les positions de lecture pour le tri
     const { data: positions, error: positionsError } = await supabaseClient
       .from('reading_positions')
-      .select('epub_name, last_opened');
-    
+      .select('epub_id, last_opened')
+      .eq('user_id', currentUser.id);
+
     if (positionsError) {
       console.warn("⚠️ Erreur positions (non bloquant):", positionsError);
     }
-    
-    // 3. Crée un map filename → date de dernière ouverture
+
+    // 3. Crée un map epub_id → date de dernière ouverture
     const lastOpenedMap = {};
     if (positions) {
       positions.forEach(p => {
-        lastOpenedMap[p.epub_name] = new Date(p.last_opened);
+        lastOpenedMap[p.epub_id] = new Date(p.last_opened);
       });
     }
-    
+
     console.log("📅 Positions de lecture:", Object.keys(lastOpenedMap).length);
-    
+
     // 4. Trie les livres : récemment lus en premier
-    const sortedBooks = [...books].sort((a, b) => {
-      const dateA = lastOpenedMap[a.filename];
-      const dateB = lastOpenedMap[b.filename];
+    const sortedBooks = [...userBooks].sort((a, b) => {
+      const epubIdA = a.epubs_library?.id;
+      const epubIdB = b.epubs_library?.id;
       
+      const dateA = epubIdA ? lastOpenedMap[epubIdA] : null;
+      const dateB = epubIdB ? lastOpenedMap[epubIdB] : null;
+
       // Si aucun n'a été ouvert, ordre par date d'ajout (plus récent d'abord)
       if (!dateA && !dateB) {
-        return new Date(b.added_date) - new Date(a.added_date);
+        return new Date(b.added_at) - new Date(a.added_at);
       }
-      
+
       // Si seulement A n'a pas été ouvert, B avant A
       if (!dateA) return 1;
-      
+
       // Si seulement B n'a pas été ouvert, A avant B
       if (!dateB) return -1;
-      
+
       // Les deux ont été ouverts, le plus récent en premier
       return dateB - dateA;
     });
-    
-    console.log("📊 Ordre d'affichage:", sortedBooks.map(b => b.title));
-    
-    // 5. Affiche les livres UN PAR UN (pas en parallèle)
-    for (const book of sortedBooks) {
-      await displayBook(book);
+
+    console.log("📊 Ordre d'affichage:", sortedBooks.map(b => b.epubs_library?.title));
+
+    // 5. Affiche les livres UN PAR UN
+    for (const userBook of sortedBooks) {
+      const book = userBook.epubs_library;
+      if (book) {
+        await displayBook(book);
+      }
     }
-    
+
   } catch (err) {
     console.error("❌ Erreur fatale:", err);
     epubListEl.innerHTML = '<p>Erreur lors du chargement.</p>';
   }
 };
 
-// Charge la bibliothèque au démarrage
-window.loadLibrary();
-
 // Fonction pour afficher un livre
 async function displayBook(book) {
   const container = document.createElement('div');
   container.className = 'epub-item';
-  
+
   // Si une couverture existe, l'afficher
   if (book.cover_url) {
     const coverImg = document.createElement('img');
@@ -112,17 +164,17 @@ async function displayBook(book) {
     placeholder.textContent = '📚';
     container.appendChild(placeholder);
   }
-  
+
   // Ajoute le titre
   const title = document.createElement('div');
   title.className = 'epub-title';
   title.textContent = book.title;
   container.appendChild(title);
-  
-  // Événement clic
+
+  // Événement clic - passe l'epub_id au lieu du filename
   container.addEventListener('click', () => {
-    window.location.href = `reader.html?book=${encodeURIComponent(book.filename)}`;
+    window.location.href = `reader.html?epub_id=${book.id}`;
   });
-  
+
   epubListEl.appendChild(container);
 }
