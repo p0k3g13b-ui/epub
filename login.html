@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - EpubReader</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+    
+    .auth-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+    
+    .auth-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .auth-header h1 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 28px;
+    }
+    
+    .auth-header p {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .auth-links {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    
+    .auth-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .auth-links a:hover {
+      text-decoration: underline;
+    }
+    
+    .auth-divider {
+      margin: 15px 0;
+      color: #999;
+    }
+    
+    #auth-message {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>📚 Connexion</h1>
+        <p>Accédez à votre bibliothèque</p>
+      </div>
+      
+      <div id="auth-message"></div>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            required 
+            autocomplete="email"
+            placeholder="votre@email.com"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            required 
+            autocomplete="current-password"
+            placeholder="••••••••"
+          >
+        </div>
+        
+        <button type="submit" class="btn-primary" id="login-btn">
+          Se connecter
+        </button>
+      </form>
+      
+      <div class="auth-links">
+        <a href="forgot-password.html">Mot de passe oublié ?</a>
+        <div class="auth-divider">•</div>
+        <span>Pas encore de compte ? </span>
+        <a href="signup.html">S'inscrire</a>
+      </div>
+    </div>
+  </div>
+  
+  <script src="auth.js"></script>
+  <script>
+    const form = document.getElementById('login-form');
+    const loginBtn = document.getElementById('login-btn');
+    const messageEl = document.getElementById('auth-message');
+    
+    // Vérifie si déjà connecté
+    checkAuth().then(user => {
+      if (user) {
+        window.location.href = 'index.html';
+      }
+    });
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      
+      if (!email || !password) {
+        showMessage('Veuillez remplir tous les champs', 'error');
+        return;
+      }
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Connexion...';
+      
+      try {
+        const { user, error } = await supabaseClient.auth.signIn({
+          email: email,
+          password: password
+        });
+        
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            showMessage('Email ou mot de passe incorrect', 'error');
+          } else if (error.message.includes('Email not confirmed')) {
+            showMessage('Veuillez confirmer votre email avant de vous connecter', 'error');
+          } else {
+            showMessage(error.message, 'error');
+          }
+          return;
+        }
+        
+        if (user) {
+          showMessage('Connexion réussie ! Redirection...', 'success');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1000);
+        }
+        
+      } catch (err) {
+        console.error('Erreur connexion:', err);
+        showMessage('Erreur lors de la connexion', 'error');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Se connecter';
+      }
+    });
+    
+    function showMessage(message, type) {
+      messageEl.innerHTML = `<div class="status-message ${type}">${message}</div>`;
+    }
+  </script>
+</body>
+</html>
