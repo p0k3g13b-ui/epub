@@ -1,4 +1,4 @@
-// URL du backend
+
 const BACKEND_URL = 'https://epub-backend.vercel.app';
 
 // Map pour stocker les données des livres (évite les problèmes de caractères spéciaux dans JSON)
