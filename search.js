@@ -111,25 +111,119 @@ function displayResults(results) {
   document.querySelectorAll('.add-button').forEach(button => {
     button.addEventListener('click', () => {
       const bookData = JSON.parse(button.dataset.book);
-      addBookToLibrary(bookData, button);
+      openAddBookModal(bookData);
     });
   });
 }
 
-// Ajoute un livre à la bibliothèque
-async function addBookToLibrary(bookData, button) {
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = '⏳ Téléchargement...';
+// Ouvre la modal pour ajouter un livre
+function openAddBookModal(bookData) {
+  // Ouvre Anna's Archive dans un nouvel onglet
+  window.open(bookData.bookUrl, '_blank');
+  
+  // Crée la modal
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📥 Ajouter : ${escapeHtml(bookData.title)}</h2>
+        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="modal-steps">
+          <div class="step">
+            <span class="step-number">1️⃣</span>
+            <p>Une page Anna's Archive s'est ouverte dans un nouvel onglet</p>
+          </div>
+          
+          <div class="step">
+            <span class="step-number">2️⃣</span>
+            <p>Passez la vérification puis <strong>CLIC DROIT</strong> sur le bouton/lien "Download"<br>
+            → Sélectionnez <strong>"Copier l'adresse du lien"</strong></p>
+          </div>
+          
+          <div class="step">
+            <span class="step-number">3️⃣</span>
+            <p>Collez le lien ci-dessous :</p>
+          </div>
+        </div>
+        
+        <input 
+          type="text" 
+          id="download-link-input" 
+          class="download-link-input"
+          placeholder="https://ipfs.io/ipfs/... ou https://download.library.lol/..."
+        >
+        
+        <div id="modal-status"></div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="modal-button secondary" onclick="this.closest('.modal-overlay').remove()">
+          Annuler
+        </button>
+        <button class="modal-button primary" id="download-from-url-btn">
+          📥 Télécharger et ajouter
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Focus sur l'input
+  setTimeout(() => {
+    document.getElementById('download-link-input').focus();
+  }, 100);
+  
+  // Événement du bouton de téléchargement
+  document.getElementById('download-from-url-btn').addEventListener('click', () => {
+    const downloadUrl = document.getElementById('download-link-input').value.trim();
+    addBookFromUrl(downloadUrl, bookData, modal);
+  });
+  
+  // Appui sur Entrée
+  document.getElementById('download-link-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const downloadUrl = e.target.value.trim();
+      addBookFromUrl(downloadUrl, bookData, modal);
+    }
+  });
+}
+
+// Ajoute un livre depuis une URL de téléchargement
+async function addBookFromUrl(downloadUrl, bookData, modal) {
+  const statusEl = modal.querySelector('#modal-status');
+  const downloadBtn = modal.querySelector('#download-from-url-btn');
+  const inputEl = modal.querySelector('#download-link-input');
+  
+  // Validation du lien
+  if (!downloadUrl) {
+    statusEl.innerHTML = '<div class="status-message error">❌ Veuillez coller un lien de téléchargement</div>';
+    return;
+  }
+  
+  if (!downloadUrl.startsWith('http://') && !downloadUrl.startsWith('https://')) {
+    statusEl.innerHTML = '<div class="status-message error">❌ Le lien doit commencer par http:// ou https://</div>';
+    return;
+  }
+  
+  // Désactive l'interface
+  downloadBtn.disabled = true;
+  inputEl.disabled = true;
+  downloadBtn.textContent = '⏳ Téléchargement en cours...';
+  statusEl.innerHTML = '<div class="status-message loading">⏳ Téléchargement du fichier depuis le lien fourni...</div>';
   
   try {
-    const response = await fetch(`${BACKEND_URL}/api/add-book`, {
+    const response = await fetch(`${BACKEND_URL}/api/add-book-from-url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        bookUrl: bookData.bookUrl,
+        downloadUrl: downloadUrl,
         metadata: {
           title: bookData.title,
           author: bookData.author,
@@ -142,32 +236,33 @@ async function addBookToLibrary(bookData, button) {
     const data = await response.json();
     
     if (data.success) {
-      button.textContent = '✅ Ajouté !';
-      button.classList.add('added');
+      statusEl.innerHTML = '<div class="status-message success">✅ Livre ajouté avec succès !</div>';
       showStatus(`"${bookData.title}" a été ajouté à votre bibliothèque !`, 'success');
       
-      // Recharge la bibliothèque après 1 seconde
+      // Ferme la modal après 2 secondes
       setTimeout(() => {
-        // Recharge la page de la bibliothèque
+        modal.remove();
+        // Recharge la bibliothèque
         if (window.loadLibrary) {
           window.loadLibrary();
         }
-      }, 1000);
+      }, 2000);
       
     } else if (response.status === 409) {
-      // Doublon
-      button.textContent = '📚 Déjà dans la bibliothèque';
-      button.classList.add('already-added');
-      showStatus(data.message, 'info');
+      statusEl.innerHTML = '<div class="status-message info">ℹ️ Ce livre est déjà dans votre bibliothèque</div>';
+      downloadBtn.disabled = false;
+      inputEl.disabled = false;
+      downloadBtn.textContent = '📥 Télécharger et ajouter';
     } else {
       throw new Error(data.message || 'Erreur lors de l\'ajout');
     }
     
   } catch (error) {
-    console.error('Erreur ajout:', error);
-    button.disabled = false;
-    button.textContent = originalText;
-    showStatus(`Erreur: ${error.message}`, 'error');
+    console.error('Erreur ajout depuis URL:', error);
+    statusEl.innerHTML = `<div class="status-message error">❌ ${error.message}</div>`;
+    downloadBtn.disabled = false;
+    inputEl.disabled = false;
+    downloadBtn.textContent = '📥 Télécharger et ajouter';
   }
 }
 
