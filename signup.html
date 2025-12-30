@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription - EpubReader</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+    
+    .auth-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+    
+    .auth-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .auth-header h1 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 28px;
+    }
+    
+    .auth-header p {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .form-helper {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+    
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .auth-links {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    
+    .auth-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .auth-links a:hover {
+      text-decoration: underline;
+    }
+    
+    #auth-message {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>📚 Inscription</h1>
+        <p>Créez votre compte gratuitement</p>
+      </div>
+      
+      <div id="auth-message"></div>
+      
+      <form id="signup-form">
+        <div class="form-group">
+          <label for="username">Nom d'utilisateur</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            required 
+            minlength="3"
+            maxlength="30"
+            pattern="[a-zA-Z0-9_-]+"
+            placeholder="johndoe"
+          >
+          <div class="form-helper">3-30 caractères, lettres, chiffres, - et _ uniquement</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            required 
+            autocomplete="email"
+            placeholder="votre@email.com"
+          >
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            required 
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="••••••••"
+          >
+          <div class="form-helper">Minimum 8 caractères</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="confirm-password">Confirmer le mot de passe</label>
+          <input 
+            type="password" 
+            id="confirm-password" 
+            name="confirm-password" 
+            required 
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="••••••••"
+          >
+        </div>
+        
+        <button type="submit" class="btn-primary" id="signup-btn">
+          S'inscrire
+        </button>
+      </form>
+      
+      <div class="auth-links">
+        <span>Déjà un compte ? </span>
+        <a href="login.html">Se connecter</a>
+      </div>
+    </div>
+  </div>
+  
+  <script src="auth.js"></script>
+  <script>
+    const form = document.getElementById('signup-form');
+    const signupBtn = document.getElementById('signup-btn');
+    const messageEl = document.getElementById('auth-message');
+    
+    // Vérifie si déjà connecté
+    checkAuth().then(user => {
+      if (user) {
+        window.location.href = 'index.html';
+      }
+    });
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      
+      // Validations
+      if (!username || !email || !password || !confirmPassword) {
+        showMessage('Veuillez remplir tous les champs', 'error');
+        return;
+      }
+      
+      if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        showMessage('Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, - et _', 'error');
+        return;
+      }
+      
+      if (username.length < 3 || username.length > 30) {
+        showMessage('Le nom d\'utilisateur doit faire entre 3 et 30 caractères', 'error');
+        return;
+      }
+      
+      if (password.length < 8) {
+        showMessage('Le mot de passe doit faire au moins 8 caractères', 'error');
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        showMessage('Les mots de passe ne correspondent pas', 'error');
+        return;
+      }
+      
+      signupBtn.disabled = true;
+      signupBtn.textContent = 'Inscription...';
+      
+      try {
+        // 1. Vérifie si le username existe déjà
+        const { data: existingUsers, error: checkError } = await supabaseClient
+          .from('users')
+          .select('username')
+          .eq('username', username)
+          .limit(1);
+        
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('Erreur vérification username:', checkError);
+        }
+        
+        if (existingUsers && existingUsers.length > 0) {
+          showMessage('Ce nom d\'utilisateur est déjà pris', 'error');
+          return;
+        }
+        
+        // 2. Crée le compte Supabase Auth
+        const { user, error } = await supabaseClient.auth.signUp({
+          email: email,
+          password: password
+        });
+        
+        if (error) {
+          if (error.message.includes('already registered')) {
+            showMessage('Cet email est déjà utilisé', 'error');
+          } else {
+            showMessage(error.message, 'error');
+          }
+          return;
+        }
+        
+        if (user) {
+          // 3. Crée l'entrée dans la table users avec le username
+          const { error: userError } = await supabaseClient
+            .from('users')
+            .insert({
+              id: user.id,
+              email: email,
+              username: username
+            });
+          
+          if (userError) {
+            console.error('Erreur création user:', userError);
+            showMessage('Erreur lors de la création du profil', 'error');
+            return;
+          }
+          
+          showMessage('✅ Compte créé ! Vérifiez votre email pour confirmer votre compte.', 'success');
+          
+          // Désactive le formulaire
+          form.querySelectorAll('input').forEach(input => input.disabled = true);
+          signupBtn.disabled = true;
+          signupBtn.textContent = 'Compte créé !';
+          
+          // Redirige après 3 secondes
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 3000);
+        }
+        
+      } catch (err) {
+        console.error('Erreur inscription:', err);
+        showMessage('Erreur lors de l\'inscription', 'error');
+      } finally {
+        if (!signupBtn.textContent.includes('créé')) {
+          signupBtn.disabled = false;
+          signupBtn.textContent = 'S\'inscrire';
+        }
+      }
+    });
+    
+    function showMessage(message, type) {
+      messageEl.innerHTML = `<div class="status-message ${type}">${message}</div>`;
+    }
+  </script>
+</body>
+</html>
