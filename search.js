@@ -1,4 +1,3 @@
-
 const BACKEND_URL = 'https://epub-backend.vercel.app';
 
 // Map pour stocker les données des livres (évite les problèmes de caractères spéciaux dans JSON)
@@ -232,6 +231,13 @@ async function addBookFromUrl(downloadUrl, bookData, modal) {
     return;
   }
   
+  // Récupère l'utilisateur actuel
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    statusEl.innerHTML = '<div class="status-message error">❌ Erreur : utilisateur non connecté</div>';
+    return;
+  }
+  
   // Désactive l'interface
   downloadBtn.disabled = true;
   inputEl.disabled = true;
@@ -246,12 +252,13 @@ async function addBookFromUrl(downloadUrl, bookData, modal) {
       },
       body: JSON.stringify({
         downloadUrl: downloadUrl,
+        userId: currentUser.id, // Envoie l'ID utilisateur
         metadata: {
           title: bookData.title,
           author: bookData.author,
           year: bookData.year,
           language: bookData.language,
-          coverUrl: bookData.coverUrl // URL de la couverture
+          coverUrl: bookData.coverUrl
         }
       })
     });
@@ -271,7 +278,7 @@ async function addBookFromUrl(downloadUrl, bookData, modal) {
         }
       }, 2000);
       
-    } else if (response.status === 409) {
+    } else if (response.status === 409 || data.alreadyOwned) {
       statusEl.innerHTML = '<div class="status-message info">ℹ️ Ce livre est déjà dans votre bibliothèque</div>';
       downloadBtn.disabled = false;
       inputEl.disabled = false;
