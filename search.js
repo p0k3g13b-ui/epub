@@ -1,6 +1,10 @@
 // URL du backend
 const BACKEND_URL = 'https://epub-backend.vercel.app';
 
+// Map pour stocker les données des livres (évite les problèmes de caractères spéciaux dans JSON)
+const booksDataMap = new Map();
+let bookIndexCounter = 0;
+
 // Gestion des onglets
 document.querySelectorAll('.tab-button').forEach(button => {
   button.addEventListener('click', () => {
@@ -82,9 +86,17 @@ async function performSearch() {
 function displayResults(results) {
   searchResults.innerHTML = '';
   
+  // Réinitialise la map et le compteur
+  booksDataMap.clear();
+  bookIndexCounter = 0;
+  
   results.forEach(result => {
     const resultCard = document.createElement('div');
     resultCard.className = 'result-card';
+    
+    // Stocke les données dans la Map avec un index
+    const bookIndex = bookIndexCounter++;
+    booksDataMap.set(bookIndex, result);
     
     resultCard.innerHTML = `
       <div class="result-main">
@@ -99,7 +111,7 @@ function displayResults(results) {
           </div>
         </div>
       </div>
-      <button class="add-button" data-book='${JSON.stringify(result)}'>
+      <button class="add-button" data-book-index="${bookIndex}">
         ➕ Ajouter
       </button>
     `;
@@ -110,7 +122,8 @@ function displayResults(results) {
   // Ajoute les événements aux boutons
   document.querySelectorAll('.add-button').forEach(button => {
     button.addEventListener('click', () => {
-      const bookData = JSON.parse(button.dataset.book);
+      const bookIndex = parseInt(button.dataset.bookIndex);
+      const bookData = booksDataMap.get(bookIndex);
       openAddBookModal(bookData);
     });
   });
