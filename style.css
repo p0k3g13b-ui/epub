@@ -106,7 +106,7 @@ h1 {
   left: 0;
   background: white;
   /* Marges latérales */
-  padding: 0 10%;
+  padding: 0 5%;
   box-sizing: border-box;
 }
 
@@ -621,3 +621,4 @@ h1 {
     width: 100%;
   }
 }
+
