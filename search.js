@@ -98,9 +98,18 @@ function displayResults(results) {
     const bookIndex = bookIndexCounter++;
     booksDataMap.set(bookIndex, result);
     
+    // Affiche la couverture si disponible, sinon l'icône
+    let coverHtml;
+    if (result.coverUrl) {
+      coverHtml = `<img src="${escapeHtml(result.coverUrl)}" alt="${escapeHtml(result.title)}" class="result-cover" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                   <div class="result-icon-fallback" style="display:none;">📚</div>`;
+    } else {
+      coverHtml = `<div class="result-icon">📚</div>`;
+    }
+    
     resultCard.innerHTML = `
       <div class="result-main">
-        <div class="result-icon">📚</div>
+        ${coverHtml}
         <div class="result-info">
           <h3 class="result-title">${escapeHtml(result.title)}</h3>
           <p class="result-author">${escapeHtml(result.author || 'Auteur inconnu')}</p>
@@ -241,7 +250,8 @@ async function addBookFromUrl(downloadUrl, bookData, modal) {
           title: bookData.title,
           author: bookData.author,
           year: bookData.year,
-          language: bookData.language
+          language: bookData.language,
+          coverUrl: bookData.coverUrl // URL de la couverture
         }
       })
     });
