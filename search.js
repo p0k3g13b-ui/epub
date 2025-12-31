@@ -16,6 +16,11 @@ document.querySelectorAll('.tab-button').forEach(button => {
     // Active l'onglet cliqué
     button.classList.add('active');
     document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Charge le catalogue si on clique sur l'onglet Catalogue
+    if (tabName === 'catalog' && window.loadCatalog) {
+      window.loadCatalog();
+    }
   });
 });
 
