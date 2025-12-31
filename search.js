@@ -4,13 +4,50 @@ const BACKEND_URL = 'https://epub-backend.vercel.app';
 const booksDataMap = new Map();
 let bookIndexCounter = 0;
 
-// Gestion des onglets
-document.querySelectorAll('.tab-button').forEach(button => {
+// Gestion du menu latéral
+const menuToggle = document.getElementById('menu-toggle');
+const sideMenu = document.getElementById('side-menu');
+const menuOverlay = document.getElementById('menu-overlay');
+const sideMenuLogout = document.getElementById('side-menu-logout');
+
+// Fonction pour ouvrir le menu
+function openMenu() {
+  sideMenu.classList.add('active');
+  menuOverlay.classList.add('active');
+  menuToggle.classList.add('active');
+}
+
+// Fonction pour fermer le menu
+function closeMenu() {
+  sideMenu.classList.remove('active');
+  menuOverlay.classList.remove('active');
+  menuToggle.classList.remove('active');
+}
+
+// Toggle menu au clic sur l'icône
+menuToggle.addEventListener('click', () => {
+  if (sideMenu.classList.contains('active')) {
+    closeMenu();
+  } else {
+    openMenu();
+  }
+});
+
+// Fermer le menu au clic sur l'overlay
+menuOverlay.addEventListener('click', closeMenu);
+
+// Déconnexion depuis le menu
+sideMenuLogout.addEventListener('click', () => {
+  logout();
+});
+
+// Gestion des onglets depuis le menu latéral
+document.querySelectorAll('.side-menu-item').forEach(button => {
   button.addEventListener('click', () => {
     const tabName = button.dataset.tab;
     
     // Désactive tous les onglets
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.side-menu-item').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     
     // Active l'onglet cliqué
@@ -21,6 +58,9 @@ document.querySelectorAll('.tab-button').forEach(button => {
     if (tabName === 'catalog' && window.loadCatalog) {
       window.loadCatalog();
     }
+    
+    // Ferme le menu
+    closeMenu();
   });
 });
 
