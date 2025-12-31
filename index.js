@@ -19,17 +19,14 @@ let currentUser = null;
 
 // Fonction pour afficher les infos utilisateur
 function displayUserInfo(user) {
-  const tabs = document.querySelector('.tabs');
+  const topBarUser = document.querySelector('.top-bar-user');
+  const sideMenuUser = document.querySelector('.side-menu-user');
   
-  // Crée le conteneur d'infos utilisateur
-  const userInfo = document.createElement('div');
-  userInfo.className = 'user-info';
-  userInfo.innerHTML = `
-    <span class="username">👤 ${user.username || user.email}</span>
-    <button class="logout-btn" onclick="logout()">🚪 Déconnexion</button>
-  `;
+  // Affiche le pseudo dans la barre supérieure
+  topBarUser.textContent = user.username || user.email;
   
-  tabs.appendChild(userInfo);
+  // Affiche le pseudo avec icône dans le menu latéral
+  sideMenuUser.innerHTML = `👤 ${user.username || user.email}`;
 }
 
 const epubListEl = document.getElementById('epub-list');
