@@ -3,74 +3,169 @@ body {
   margin: 0;
   padding: 0;
   background-color: #f5f5f5;
+  padding-top: 60px; /* Espace pour la barre fixe */
 }
 
-/* Onglets */
-.tabs {
-  display: flex;
+/* Barre supérieure */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
   background: white;
   border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 20px;
-  position: sticky;
-  top: 0;
   z-index: 100;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Icône hamburger */
+.menu-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.menu-toggle:hover {
+  opacity: 0.7;
+}
+
+.hamburger-icon {
+  width: 24px;
+  height: 18px;
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-left: auto;
+.hamburger-icon span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: #2d3436;
+  transition: background 0.2s;
 }
 
-.username {
+/* Icône quand menu ouvert */
+.menu-toggle.active .hamburger-icon span {
+  background: #dfe6e9;
+}
+
+/* User info dans la barre */
+.top-bar-user {
   font-size: 14px;
   color: #333;
   font-weight: 500;
 }
 
-.logout-btn {
-  padding: 8px 16px;
-  background: #f5f5f5;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  color: #666;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s;
+/* Menu latéral */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background: #2d3436;
+  z-index: 200;
+  transition: left 0s;
+  overflow-y: auto;
 }
 
-.logout-btn:hover {
-  background: #ff5252;
+.side-menu.active {
+  left: 0;
+}
+
+.side-menu-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 0;
+}
+
+/* User dans le menu */
+.side-menu-user {
+  text-align: center;
+  padding: 20px;
   color: white;
+  font-size: 16px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 20px;
 }
 
-.tab-button {
+/* Items du menu */
+.side-menu-items {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-menu-item {
   background: none;
   border: none;
+  color: white;
   padding: 16px 24px;
-  font-size: 16px;
+  text-align: left;
+  font-size: 15px;
   cursor: pointer;
-  color: #666;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s;
-  font-weight: 500;
+  transition: background 0.2s;
+  border-left: 3px solid transparent;
 }
 
-.tab-button:hover {
-  color: #333;
-  background: #f5f5f5;
+.side-menu-item:hover {
+  background: #636e72;
 }
 
-.tab-button.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+.side-menu-item.active {
+  background: #636e72;
+  border-left-color: #667eea;
+  font-weight: 600;
 }
 
+/* Bouton déconnexion */
+.side-menu-logout {
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  color: #e74c3c;
+  padding: 16px 24px;
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: auto;
+}
+
+.side-menu-logout:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+/* Overlay */
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 150;
+  display: none;
+}
+
+.menu-overlay.active {
+  display: block;
+}
+
+/* Contenu des onglets */
 .tab-content {
   display: none;
   padding: 20px;
@@ -251,6 +346,16 @@ h1 {
 @media (max-width: 768px) {
   body {
     padding: 10px;
+    padding-top: 70px;
+  }
+  
+  .top-bar {
+    padding: 0 10px;
+  }
+  
+  .side-menu {
+    width: 85%;
+    left: -85%;
   }
   
   .epub-item {
@@ -266,28 +371,6 @@ h1 {
   
   #swipe-left, #swipe-right {
     width: 40%;
-  }
-  
-  .tabs {
-    padding: 0 10px;
-  }
-  
-  .tab-button {
-    padding: 12px 12px;
-    font-size: 13px;
-  }
-  
-  .user-info {
-    gap: 8px;
-  }
-  
-  .username {
-    display: none;
-  }
-  
-  .logout-btn {
-    padding: 6px 12px;
-    font-size: 13px;
   }
   
   .search-box {
