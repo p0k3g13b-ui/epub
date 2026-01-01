@@ -333,14 +333,14 @@ h1 {
   right: 0; 
 }
 
-/* Indicateurs visuels au survol (optionnel) */
+/* Indicateurs visuels au survol (optionnel) 
 #swipe-left:hover {
   background: linear-gradient(to right, rgba(0,0,0,0.05), transparent);
 }
 
 #swipe-right:hover {
   background: linear-gradient(to left, rgba(0,0,0,0.05), transparent);
-}
+}*\
 
 /* Responsive */
 @media (max-width: 768px) {
