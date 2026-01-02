@@ -180,6 +180,41 @@ h1 {
   color: #333;
 }
 
+/* Header de la bibliothèque */
+.library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.library-header h2 {
+  margin: 0;
+  color: #2d3436;
+  font-size: 24px;
+}
+
+.status-filter {
+  padding: 10px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #2d3436;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.status-filter:hover {
+  border-color: #667eea;
+}
+
+.status-filter:focus {
+  border-color: #667eea;
+}
+
 /* Page d'accueil */
 #epub-list, #catalog-list {
   display: flex;
@@ -291,6 +326,61 @@ h1 {
   text-overflow: ellipsis;
 }
 
+.epub-status {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.epub-status.unread {
+  color: #95a5a6;
+  background: rgba(149, 165, 166, 0.2);
+}
+
+.epub-status.reading {
+  color: #f39c12;
+  background: rgba(243, 156, 18, 0.2);
+}
+
+.epub-status.read {
+  color: #27ae60;
+  background: rgba(39, 174, 96, 0.2);
+}
+
+/* Menu contextuel */
+.context-menu {
+  position: fixed;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  z-index: 1000;
+  min-width: 150px;
+}
+
+.context-menu-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #2d3436;
+  transition: background 0.2s;
+}
+
+.context-menu-item:hover {
+  background: #f8f9fa;
+}
+
+.context-menu-item:active {
+  background: #e9ecef;
+}
+
 .epub-item iframe {
   pointer-events: none;
 }
@@ -333,14 +423,14 @@ h1 {
   right: 0; 
 }
 
-/* Indicateurs visuels au survol (optionnel) 
+/* Indicateurs visuels au survol (optionnel) */
 #swipe-left:hover {
   background: linear-gradient(to right, rgba(0,0,0,0.05), transparent);
 }
 
 #swipe-right:hover {
   background: linear-gradient(to left, rgba(0,0,0,0.05), transparent);
-}*\
+}
 
 /* Responsive */
 @media (max-width: 768px) {
