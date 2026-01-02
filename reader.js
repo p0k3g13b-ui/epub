@@ -33,6 +33,9 @@ let currentEpub = null;
     currentEpub = epub;
     console.log('📖 Livre:', currentEpub.title);
     
+    // Vérifie et met à jour le statut si c'est la première ouverture
+    await checkAndUpdateReadingStatus(epubId);
+    
     // Lance le lecteur
     initReader();
     
@@ -40,6 +43,41 @@ let currentEpub = null;
     console.error('Erreur initialisation:', err);
   }
 })();
+
+// Fonction pour vérifier et mettre à jour le statut de lecture
+async function checkAndUpdateReadingStatus(epubId) {
+  try {
+    // Récupère le statut actuel
+    const { data: userBook, error: fetchError } = await supabaseClient
+      .from('user_books')
+      .select('reading_status')
+      .eq('user_id', currentUser.id)
+      .eq('epub_id', epubId)
+      .single();
+    
+    if (fetchError) {
+      console.warn('⚠️ Erreur récupération statut:', fetchError);
+      return;
+    }
+    
+    // Si le statut est "unread", le passer à "reading"
+    if (userBook && userBook.reading_status === 'unread') {
+      const { error: updateError } = await supabaseClient
+        .from('user_books')
+        .update({ reading_status: 'reading' })
+        .eq('user_id', currentUser.id)
+        .eq('epub_id', epubId);
+      
+      if (updateError) {
+        console.warn('⚠️ Erreur mise à jour statut:', updateError);
+      } else {
+        console.log('✅ Statut changé: unread → reading');
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Erreur checkAndUpdateReadingStatus:', err);
+  }
+}
 
 // --- Initialisation du lecteur ---
 async function initReader() {
