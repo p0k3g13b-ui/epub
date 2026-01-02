@@ -56,7 +56,23 @@
 
   <!-- Contenu de l'onglet Bibliothèque -->
   <div id="library-tab" class="tab-content active">
+    <div class="library-header">
+      <h2>Ma Bibliothèque</h2>
+      <select id="status-filter" class="status-filter">
+        <option value="all">Tous les livres</option>
+        <option value="reading">En cours</option>
+        <option value="unread">Non lu</option>
+        <option value="read">Lu</option>
+      </select>
+    </div>
     <div id="epub-list"></div>
+  </div>
+
+  <!-- Menu contextuel pour changer le statut -->
+  <div id="status-context-menu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" data-status="reading">📖 En cours</div>
+    <div class="context-menu-item" data-status="unread">📕 Non lu</div>
+    <div class="context-menu-item" data-status="read">✅ Lu</div>
   </div>
 
   <!-- Contenu de l'onglet Catalogue -->
