@@ -213,6 +213,36 @@
         
         if (user) {
           showMessage('Connexion réussie ! Redirection...', 'success');
+          
+          // Vérifie si l'utilisateur est approuvé
+          const { data: userData, error: userError } = await supabaseClient
+            .from('users')
+            .select('approved, rejected, username')
+            .eq('id', user.id)
+            .single();
+          
+          if (userError) {
+            console.error('Erreur vérification approbation:', userError);
+            showMessage('Erreur lors de la vérification du compte', 'error');
+            await supabaseClient.auth.signOut();
+            return;
+          }
+          
+          // Vérifie si rejeté
+          if (userData.rejected) {
+            showMessage('❌ Votre inscription a été refusée par l\'administrateur.', 'error');
+            await supabaseClient.auth.signOut();
+            return;
+          }
+          
+          // Vérifie si pas encore approuvé
+          if (!userData.approved) {
+            showMessage('⏳ Votre compte est en attente d\'approbation par l\'administrateur. Vous recevrez un email une fois votre compte approuvé.', 'info');
+            await supabaseClient.auth.signOut();
+            return;
+          }
+          
+          // Tout est OK, redirection
           setTimeout(() => {
             window.location.href = 'index.html';
           }, 1000);
