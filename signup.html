@@ -294,7 +294,28 @@
             return;
           }
           
-          showMessage('✅ Compte créé ! Vérifiez votre email pour confirmer votre compte.', 'success');
+          // 4. Notifie l'administrateur pour approbation
+          try {
+            const notifyResponse = await fetch('https://epub-backend.vercel.app/api/notify-admin', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                username: username,
+                email: email
+              })
+            });
+            
+            if (!notifyResponse.ok) {
+              console.warn('⚠️ Erreur notification admin (non bloquant)');
+            }
+          } catch (notifyError) {
+            console.warn('⚠️ Erreur notification admin:', notifyError);
+          }
+          
+          showMessage('✅ Compte créé ! Vérifiez votre email pour confirmer votre compte. Votre inscription sera ensuite soumise à l\'approbation de l\'administrateur.', 'success');
           
           // Désactive le formulaire
           form.querySelectorAll('input').forEach(input => input.disabled = true);
