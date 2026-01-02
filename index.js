@@ -31,6 +31,16 @@ function displayUserInfo(user) {
 
 const epubListEl = document.getElementById('epub-list');
 const catalogListEl = document.getElementById('catalog-list');
+const statusFilter = document.getElementById('status-filter');
+const contextMenu = document.getElementById('status-context-menu');
+
+let currentBooks = []; // Stocke tous les livres pour le filtrage
+let selectedBookId = null; // Pour le menu contextuel
+
+// Gestion du filtrage
+statusFilter.addEventListener('change', () => {
+  filterAndDisplayBooks();
+});
 
 // Fonction globale pour charger la bibliothèque (appelée depuis search.js)
 window.loadLibrary = async function() {
@@ -49,6 +59,7 @@ window.loadLibrary = async function() {
       .select(`
         id,
         added_at,
+        reading_status,
         epubs_library (
           id,
           title,
@@ -71,6 +82,7 @@ window.loadLibrary = async function() {
 
     if (!userBooks || userBooks.length === 0) {
       epubListEl.innerHTML = '<p>Aucun livre dans votre bibliothèque. Ajoutez-en via l\'onglet Recherche !</p>';
+      currentBooks = [];
       return;
     }
 
@@ -96,38 +108,20 @@ window.loadLibrary = async function() {
 
     console.log("📅 Positions de lecture:", Object.keys(lastOpenedMap).length);
 
-    // 4. Trie les livres : récemment lus en premier
-    const sortedBooks = [...userBooks].sort((a, b) => {
-      const epubIdA = a.epubs_library?.id;
-      const epubIdB = b.epubs_library?.id;
-      
-      const dateA = epubIdA ? lastOpenedMap[epubIdA] : null;
-      const dateB = epubIdB ? lastOpenedMap[epubIdB] : null;
+    // 4. Enrichit les données avec user_book_id et reading_status
+    const enrichedBooks = userBooks.map(ub => ({
+      ...ub.epubs_library,
+      user_book_id: ub.id,
+      reading_status: ub.reading_status || 'unread',
+      added_at: ub.added_at,
+      last_opened: lastOpenedMap[ub.epubs_library?.id] || null
+    })).filter(book => book.id); // Filtre les livres sans epub_library
 
-      // Si aucun n'a été ouvert, ordre par date d'ajout (plus récent d'abord)
-      if (!dateA && !dateB) {
-        return new Date(b.added_at) - new Date(a.added_at);
-      }
+    // 5. Stocke pour le filtrage
+    currentBooks = enrichedBooks;
 
-      // Si seulement A n'a pas été ouvert, B avant A
-      if (!dateA) return 1;
-
-      // Si seulement B n'a pas été ouvert, A avant B
-      if (!dateB) return -1;
-
-      // Les deux ont été ouverts, le plus récent en premier
-      return dateB - dateA;
-    });
-
-    console.log("📊 Ordre d'affichage:", sortedBooks.map(b => b.epubs_library?.title));
-
-    // 5. Affiche les livres UN PAR UN
-    for (const userBook of sortedBooks) {
-      const book = userBook.epubs_library;
-      if (book) {
-        await displayBook(book);
-      }
-    }
+    // 6. Affiche avec filtrage actif
+    filterAndDisplayBooks();
 
   } catch (err) {
     console.error("❌ Erreur fatale:", err);
@@ -135,10 +129,65 @@ window.loadLibrary = async function() {
   }
 };
 
+// Fonction pour filtrer et afficher les livres
+async function filterAndDisplayBooks() {
+  epubListEl.innerHTML = '';
+  
+  const filterValue = statusFilter.value;
+  
+  // Filtre selon la sélection
+  let filteredBooks = currentBooks;
+  if (filterValue !== 'all') {
+    filteredBooks = currentBooks.filter(book => book.reading_status === filterValue);
+  }
+  
+  if (filteredBooks.length === 0) {
+    const statusLabels = {
+      reading: 'en cours',
+      unread: 'non lus',
+      read: 'lus'
+    };
+    const label = filterValue === 'all' ? 'dans votre bibliothèque' : statusLabels[filterValue];
+    epubListEl.innerHTML = `<p>Aucun livre ${label}.</p>`;
+    return;
+  }
+  
+  // Tri par catégorie : En cours > Non lu > Lu
+  const statusOrder = { reading: 1, unread: 2, read: 3 };
+  
+  const sortedBooks = [...filteredBooks].sort((a, b) => {
+    const statusA = statusOrder[a.reading_status] || 99;
+    const statusB = statusOrder[b.reading_status] || 99;
+    
+    // Tri principal par statut
+    if (statusA !== statusB) {
+      return statusA - statusB;
+    }
+    
+    // Tri secondaire par dernière ouverture
+    const dateA = a.last_opened;
+    const dateB = b.last_opened;
+    
+    if (!dateA && !dateB) {
+      return new Date(b.added_at) - new Date(a.added_at);
+    }
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateB - dateA;
+  });
+  
+  // Affiche les livres
+  for (const book of sortedBooks) {
+    await displayBook(book);
+  }
+}
+
 // Fonction pour afficher un livre
 async function displayBook(book) {
   const container = document.createElement('div');
   container.className = 'epub-item';
+  container.dataset.userBookId = book.user_book_id;
+  container.dataset.epubId = book.id;
 
   // Si une couverture existe, l'afficher
   if (book.cover_url) {
@@ -163,18 +212,101 @@ async function displayBook(book) {
     container.appendChild(placeholder);
   }
 
+  // Ajoute le statut
+  const status = document.createElement('div');
+  status.className = `epub-status ${book.reading_status}`;
+  const statusLabels = {
+    unread: 'Non lu',
+    reading: 'En cours',
+    read: 'Lu'
+  };
+  status.textContent = statusLabels[book.reading_status] || 'Non lu';
+  container.appendChild(status);
+
   // Ajoute le titre
   const title = document.createElement('div');
   title.className = 'epub-title';
   title.textContent = book.title;
   container.appendChild(title);
 
-  // Événement clic - passe l'epub_id au lieu du filename
-  container.addEventListener('click', () => {
+  // Événement clic (lecture)
+  container.addEventListener('click', (e) => {
+    // Ne pas ouvrir si on a cliqué sur le menu contextuel
+    if (e.button !== 0) return;
     window.location.href = `reader.html?epub_id=${book.id}`;
   });
 
+  // Événement clic droit (menu contextuel)
+  container.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY, book.user_book_id);
+  });
+
   epubListEl.appendChild(container);
+}
+
+// Fonction pour afficher le menu contextuel
+function showContextMenu(x, y, userBookId) {
+  selectedBookId = userBookId;
+  contextMenu.style.display = 'block';
+  contextMenu.style.left = `${x}px`;
+  contextMenu.style.top = `${y}px`;
+}
+
+// Fonction pour masquer le menu contextuel
+function hideContextMenu() {
+  contextMenu.style.display = 'none';
+  selectedBookId = null;
+}
+
+// Masquer le menu au clic ailleurs
+document.addEventListener('click', hideContextMenu);
+
+// Empêcher la fermeture si on clique sur le menu lui-même
+contextMenu.addEventListener('click', (e) => {
+  e.stopPropagation();
+});
+
+// Gestion des clics sur les items du menu
+document.querySelectorAll('.context-menu-item').forEach(item => {
+  item.addEventListener('click', async () => {
+    const newStatus = item.dataset.status;
+    if (selectedBookId) {
+      await updateReadingStatus(selectedBookId, newStatus);
+    }
+    hideContextMenu();
+  });
+});
+
+// Fonction pour mettre à jour le statut de lecture
+async function updateReadingStatus(userBookId, newStatus) {
+  try {
+    const { error } = await supabaseClient
+      .from('user_books')
+      .update({ reading_status: newStatus })
+      .eq('id', userBookId);
+    
+    if (error) {
+      console.error('❌ Erreur mise à jour statut:', error);
+      alert('Erreur lors de la mise à jour du statut');
+      return;
+    }
+    
+    console.log(`✅ Statut mis à jour: ${newStatus}`);
+    
+    // Met à jour dans currentBooks
+    const book = currentBooks.find(b => b.user_book_id === userBookId);
+    if (book) {
+      book.reading_status = newStatus;
+    }
+    
+    // Recharge l'affichage
+    await filterAndDisplayBooks();
+    
+  } catch (err) {
+    console.error('❌ Erreur:', err);
+    alert('Erreur lors de la mise à jour du statut');
+  }
 }
 
 // Fonction pour charger le catalogue (bibliothèque commune)
