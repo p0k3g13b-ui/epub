@@ -51,13 +51,13 @@ body {
   display: block;
   height: 2px;
   width: 100%;
-  background: #2d3436;
+  background: #FFFFFF;
   transition: background 0.2s;
 }
 
 /* Icône quand menu ouvert */
 .menu-toggle.active .hamburger-icon span {
-  background: #dfe6e9;
+  background: #FFFFFF;
 }
 
 /* User info dans la barre */
@@ -1121,3 +1121,4 @@ h1 {
     width: 100%;
   }
 }
+
