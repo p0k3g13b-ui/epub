@@ -688,6 +688,21 @@ h1 {
   background: #e9ecef;
 }
 
+.context-menu-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
+}
+
+.context-menu-item.danger {
+  color: #e74c3c;
+}
+
+.context-menu-item.danger:hover {
+  background: #ffebee;
+  color: #c62828;
+}
+
 .epub-item iframe {
   pointer-events: none;
 }
