@@ -36,6 +36,11 @@ const contextMenu = document.getElementById('status-context-menu');
 
 let currentBooks = []; // Stocke tous les livres pour le filtrage
 let selectedBookId = null; // Pour le menu contextuel
+let selectedEpubId = null; // Pour connaître l'epub_id lors de la suppression
+
+// Variables pour l'appui long sur mobile
+let touchTimer = null;
+let touchStartPos = { x: 0, y: 0 };
 
 // Gestion du filtrage
 statusFilter.addEventListener('change', () => {
@@ -81,7 +86,7 @@ window.loadLibrary = async function() {
     }
 
     if (!userBooks || userBooks.length === 0) {
-      epubListEl.innerHTML = '<p>Aucun livre dans votre bibliothèque. Ajoutez-en via l\'onglet Recherche !</p>';
+      epubListEl.innerHTML = '<p>Aucun livre dans votre bibliothèque. Ajoutez-en via le bouton + !</p>';
       currentBooks = [];
       return;
     }
@@ -239,15 +244,49 @@ async function displayBook(book) {
   // Événement clic droit (menu contextuel)
   container.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    showContextMenu(e.clientX, e.clientY, book.user_book_id);
+    showContextMenu(e.clientX, e.clientY, book.user_book_id, book.id);
+  });
+
+  // Support tactile (appui long) pour mobile
+  container.addEventListener('touchstart', (e) => {
+    touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchTimer = setTimeout(() => {
+      // Simule un clic droit après 500ms d'appui
+      const touch = e.touches[0];
+      showContextMenu(touch.clientX, touch.clientY, book.user_book_id, book.id);
+      // Empêche le clic normal
+      container.style.pointerEvents = 'none';
+      setTimeout(() => {
+        container.style.pointerEvents = 'auto';
+      }, 100);
+    }, 500);
+  });
+
+  container.addEventListener('touchmove', (e) => {
+    // Si l'utilisateur bouge trop, annule l'appui long
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+    if (deltaX > 10 || deltaY > 10) {
+      clearTimeout(touchTimer);
+    }
+  });
+
+  container.addEventListener('touchend', () => {
+    clearTimeout(touchTimer);
+  });
+
+  container.addEventListener('touchcancel', () => {
+    clearTimeout(touchTimer);
   });
 
   epubListEl.appendChild(container);
 }
 
 // Fonction pour afficher le menu contextuel
-function showContextMenu(x, y, userBookId) {
+function showContextMenu(x, y, userBookId, epubId) {
   selectedBookId = userBookId;
+  selectedEpubId = epubId;
   contextMenu.style.display = 'block';
   contextMenu.style.left = `${x}px`;
   contextMenu.style.top = `${y}px`;
@@ -257,6 +296,7 @@ function showContextMenu(x, y, userBookId) {
 function hideContextMenu() {
   contextMenu.style.display = 'none';
   selectedBookId = null;
+  selectedEpubId = null;
 }
 
 // Masquer le menu au clic ailleurs
@@ -271,9 +311,16 @@ contextMenu.addEventListener('click', (e) => {
 document.querySelectorAll('.context-menu-item').forEach(item => {
   item.addEventListener('click', async () => {
     const newStatus = item.dataset.status;
-    if (selectedBookId) {
+    const action = item.dataset.action;
+    
+    if (action === 'remove') {
+      // Suppression du livre
+      await removeBookFromLibrary(selectedBookId, selectedEpubId);
+    } else if (newStatus && selectedBookId) {
+      // Changement de statut
       await updateReadingStatus(selectedBookId, newStatus);
     }
+    
     hideContextMenu();
   });
 });
@@ -309,8 +356,47 @@ async function updateReadingStatus(userBookId, newStatus) {
   }
 }
 
+// Fonction pour retirer un livre de la bibliothèque
+async function removeBookFromLibrary(userBookId, epubId) {
+  // Demande confirmation
+  const book = currentBooks.find(b => b.user_book_id === userBookId);
+  const bookTitle = book ? book.title : 'ce livre';
+  
+  if (!confirm(`Voulez-vous vraiment retirer "${bookTitle}" de votre bibliothèque ?`)) {
+    return;
+  }
+  
+  try {
+    // Supprime de user_books (pas de epubs_library, juste la relation)
+    const { error } = await supabaseClient
+      .from('user_books')
+      .delete()
+      .eq('id', userBookId);
+    
+    if (error) {
+      console.error('❌ Erreur suppression:', error);
+      alert('Erreur lors de la suppression du livre');
+      return;
+    }
+    
+    console.log(`✅ Livre retiré de la bibliothèque: ${bookTitle}`);
+    
+    // Supprime de currentBooks
+    currentBooks = currentBooks.filter(b => b.user_book_id !== userBookId);
+    
+    // Recharge l'affichage
+    await filterAndDisplayBooks();
+    
+  } catch (err) {
+    console.error('❌ Erreur:', err);
+    alert('Erreur lors de la suppression du livre');
+  }
+}
+
 // Fonction pour charger le catalogue (bibliothèque commune)
 window.loadCatalog = async function() {
+  if (!catalogListEl) return; // Si le catalogue est commenté
+  
   catalogListEl.innerHTML = '';
 
   if (!currentUser) {
@@ -332,7 +418,7 @@ window.loadCatalog = async function() {
     }
 
     if (!allEpubs || allEpubs.length === 0) {
-      catalogListEl.innerHTML = '<p>Le catalogue est vide. Ajoutez des livres via l\'onglet Recherche !</p>';
+      catalogListEl.innerHTML = '<p>Le catalogue est vide. Ajoutez des livres via le bouton + !</p>';
       return;
     }
 
