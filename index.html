@@ -23,26 +23,23 @@
       </span>
     </button>
     <div class="top-bar-user"></div>
+    <button class="add-book-toggle" id="add-book-toggle" aria-label="Ajouter un livre">+</button>
   </header>
 
-  <!-- Menu latéral -->
+  <!-- Menu latéral gauche -->
   <nav class="side-menu" id="side-menu">
     <div class="side-menu-content">
       <div class="side-menu-user"></div>
       
       <div class="side-menu-items">
         <button class="side-menu-item active" data-tab="library">
-          📚 Ma Bibliothèque
+          📚 Livres
         </button>
+        <!-- CATALOGUE - Pour réactiver, décommentez les 3 lignes ci-dessous
         <button class="side-menu-item" data-tab="catalog">
           📖 Catalogue
         </button>
-        <button class="side-menu-item" data-tab="search">
-          🔍 Rechercher
-        </button>
-        <button class="side-menu-item" data-tab="guide">
-          📖 Guide
-        </button>
+        -->
       </div>
       
       <button class="side-menu-logout" id="side-menu-logout">
@@ -54,10 +51,65 @@
   <!-- Overlay -->
   <div class="menu-overlay" id="menu-overlay"></div>
 
+  <!-- Panneau latéral droit - Ajouter un livre -->
+  <div class="right-panel" id="right-panel">
+    <div class="right-panel-content">
+      <div class="right-panel-header">
+        <h2>📚 Ajouter un livre</h2>
+        <button class="right-panel-close" id="right-panel-close">✕</button>
+      </div>
+
+      <div class="right-panel-body">
+        <!-- Bouton Anna's Archive -->
+        <a href="https://fr.annas-archive.se/search?index=&page=1&sort=&ext=epub&display=&q=" 
+           target="_blank" 
+           class="annas-archive-btn">
+          🔍 Rechercher sur Anna's Archive
+        </a>
+
+        <div class="section-divider">ou</div>
+
+        <!-- Recherche intégrée -->
+        <div class="search-box-panel">
+          <input 
+            type="text" 
+            id="search-input-panel" 
+            placeholder="Titre, auteur, ISBN..."
+            autocomplete="off"
+          >
+          <button id="search-button-panel">Rechercher</button>
+        </div>
+
+        <div id="search-status-panel"></div>
+        <div id="search-results-panel"></div>
+
+        <div class="section-divider">ou</div>
+
+        <!-- Ajout direct par lien -->
+        <div class="direct-add-section">
+          <label for="direct-download-link">Lien de téléchargement direct :</label>
+          <input 
+            type="text" 
+            id="direct-download-link" 
+            class="download-link-input"
+            placeholder="https://ipfs.io/ipfs/... ou https://download.library.lol/..."
+          >
+          <button class="modal-button primary" id="direct-add-btn">
+            📥 Télécharger et ajouter
+          </button>
+          <div id="direct-add-status"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay pour panneau droit -->
+  <div class="right-panel-overlay" id="right-panel-overlay"></div>
+
   <!-- Contenu de l'onglet Bibliothèque -->
   <div id="library-tab" class="tab-content active">
     <div class="library-header">
-      <h2>Ma Bibliothèque</h2>
+      <h2>Livres</h2>
       <select id="status-filter" class="status-filter">
         <option value="all">Tous les livres</option>
         <option value="reading">En cours</option>
@@ -75,195 +127,11 @@
     <div class="context-menu-item" data-status="read">✅ Lu</div>
   </div>
 
-  <!-- Contenu de l'onglet Catalogue -->
+  <!-- CATALOGUE - Pour réactiver, décommentez la section ci-dessous
   <div id="catalog-tab" class="tab-content">
     <div id="catalog-list"></div>
   </div>
-
-  <!-- Contenu de l'onglet Recherche -->
-  <div id="search-tab" class="tab-content">
-    <div class="search-container">
-      <div class="search-header">
-        <h2>Rechercher sur Anna's Archive</h2>
-        <p class="search-subtitle">Recherchez des EPUBs et ajoutez-les à votre bibliothèque</p>
-      </div>
-      
-      <div class="search-box">
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="Titre, auteur, ISBN..."
-          autocomplete="off"
-        >
-        <button id="search-button">Rechercher</button>
-      </div>
-
-      <div id="search-status"></div>
-      <div id="search-results"></div>
-    </div>
-  </div>
-
-  <!-- Contenu de l'onglet Guide -->
-  <div id="guide-tab" class="tab-content">
-    <div class="guide-container">
-      <h1 class="guide-title">📖 Guide d'utilisation</h1>
-      <p class="guide-intro">Apprenez à ajouter des livres à votre bibliothèque en quelques clics !</p>
-
-      <!-- Méthode 1 : Catalogue -->
-      <section class="guide-section">
-        <h2 class="guide-section-title">
-          <span class="guide-number">1</span>
-          Ajouter depuis le Catalogue
-        </h2>
-        <p class="guide-description">Le moyen le plus rapide ! Les livres sont déjà disponibles.</p>
-        
-        <div class="guide-steps">
-          <div class="guide-step">
-            <div class="guide-step-number">①</div>
-            <div class="guide-step-content">
-              <h3>Ouvrez l'onglet "📖 Catalogue"</h3>
-              <p>Vous verrez tous les livres déjà présents dans la bibliothèque commune.</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">②</div>
-            <div class="guide-step-content">
-              <h3>Survolez un livre</h3>
-              <p>Un bouton <strong>"+ Ajouter"</strong> apparaît sur les livres que vous n'avez pas encore.</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">③</div>
-            <div class="guide-step-content">
-              <h3>Cliquez sur "Ajouter"</h3>
-              <p>✅ <strong>C'est tout !</strong> Le livre est instantanément ajouté à votre bibliothèque.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="guide-tip">
-          <strong>💡 Astuce :</strong> Si le bouton indique "✓ Dans ma bibliothèque", vous possédez déjà ce livre. Cliquez dessus pour le lire directement !
-        </div>
-      </section>
-
-      <!-- Méthode 2 : Anna's Archive -->
-      <section class="guide-section">
-        <h2 class="guide-section-title">
-          <span class="guide-number">2</span>
-          Ajouter depuis Anna's Archive
-        </h2>
-        <p class="guide-description">Pour les livres qui ne sont pas encore dans le catalogue.</p>
-        
-        <div class="guide-steps">
-          <div class="guide-step">
-            <div class="guide-step-number">①</div>
-            <div class="guide-step-content">
-              <h3>Ouvrez l'onglet "🔍 Rechercher"</h3>
-              <p>Entrez le titre, l'auteur ou l'ISBN du livre que vous cherchez.</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">②</div>
-            <div class="guide-step-content">
-              <h3>Cliquez sur "Rechercher"</h3>
-              <p>Les résultats d'Anna's Archive s'affichent avec les couvertures et informations.</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">③</div>
-            <div class="guide-step-content">
-              <h3>Cliquez sur "➕ Ajouter"</h3>
-              <p>Une fenêtre s'ouvre ET une page Anna's Archive dans un nouvel onglet.</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">④</div>
-            <div class="guide-step-content">
-              <h3>Sur Anna's Archive : passez la vérification</h3>
-              <p>Cliquez sur "I'm not a robot" ou résolvez le CAPTCHA si demandé.</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">⑤</div>
-            <div class="guide-step-content">
-              <h3><strong>CLIC DROIT</strong> sur "Download"</h3>
-              <p>Ne cliquez PAS normalement ! Faites un <strong>CLIC DROIT</strong> sur le bouton/lien de téléchargement.</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">⑥</div>
-            <div class="guide-step-content">
-              <h3>Sélectionnez "Copier l'adresse du lien"</h3>
-              <p>Dans le menu contextuel, choisissez "Copier l'adresse du lien" ou "Copy link address".</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">⑦</div>
-            <div class="guide-step-content">
-              <h3>Collez le lien dans la fenêtre</h3>
-              <p>Revenez à l'onglet de l'application et collez le lien dans le champ prévu (<kbd>Ctrl+V</kbd> ou <kbd>Cmd+V</kbd>).</p>
-            </div>
-          </div>
-
-          <div class="guide-step">
-            <div class="guide-step-number">⑧</div>
-            <div class="guide-step-content">
-              <h3>Cliquez sur "📥 Télécharger et ajouter"</h3>
-              <p>✅ Le livre est téléchargé, ajouté au catalogue ET à votre bibliothèque !</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="guide-warning">
-          <strong>⚠️ Important :</strong> Vous devez faire un <strong>CLIC DROIT</strong> sur le bouton Download, pas un clic normal ! Sinon le téléchargement se fera dans votre navigateur au lieu de l'application.
-        </div>
-
-        <div class="guide-tip">
-          <strong>💡 Bon à savoir :</strong> Une fois ajouté via Anna's Archive, le livre apparaît dans le Catalogue. Les autres utilisateurs pourront l'ajouter instantanément sans repasser par Anna's Archive !
-        </div>
-      </section>
-
-      <!-- Section FAQ -->
-      <section class="guide-section">
-        <h2 class="guide-section-title">
-          <span class="guide-number">?</span>
-          Questions fréquentes
-        </h2>
-        
-        <div class="guide-faq">
-          <div class="guide-faq-item">
-            <h3>Quelle est la différence entre Catalogue et Recherche ?</h3>
-            <p><strong>Catalogue</strong> = Livres déjà disponibles (ajout instantané)<br>
-            <strong>Recherche</strong> = Chercher de nouveaux livres sur Anna's Archive</p>
-          </div>
-
-          <div class="guide-faq-item">
-            <h3>Le livre est déjà dans le Catalogue, dois-je le re-télécharger ?</h3>
-            <p>Non ! Utilisez le Catalogue pour l'ajouter instantanément. Un seul fichier est stocké pour tous les utilisateurs.</p>
-          </div>
-
-          <div class="guide-faq-item">
-            <h3>Puis-je retirer un livre de ma bibliothèque ?</h3>
-            <p>Oui ! Dans le Catalogue, survolez un livre que vous possédez. Le bouton devient "✕ Retirer" (rouge). Cliquez pour le retirer de votre bibliothèque personnelle. Le livre reste dans le Catalogue pour les autres.</p>
-          </div>
-
-          <div class="guide-faq-item">
-            <h3>Le téléchargement échoue, que faire ?</h3>
-            <p>Vérifiez que vous avez bien copié le lien de téléchargement DIRECT (celui qui commence par https://ipfs.io ou https://download.library.lol). Si le problème persiste, essayez un autre lien de téléchargement sur Anna's Archive.</p>
-          </div>
-        </div>
-      </section>
-
-    </div>
-  </div>
+  -->
 
   <script src="auth.js"></script>
   <script src="index.js"></script>
