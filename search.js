@@ -35,6 +35,25 @@ function closeMenu() {
 
 // Fonction pour ouvrir le panneau droit
 function openRightPanel() {
+  // Détecte l'onglet actif
+  const activeTab = document.querySelector('.side-menu-item.active');
+  const tabName = activeTab ? activeTab.dataset.tab : 'library';
+  
+  // Change le contenu du panneau selon l'onglet
+  const panelTitle = document.getElementById('right-panel-title');
+  const booksContent = document.getElementById('books-panel-content');
+  const animesContent = document.getElementById('animes-panel-content');
+  
+  if (tabName === 'animes') {
+    panelTitle.textContent = '🎬 Ajouter un anime';
+    if (booksContent) booksContent.style.display = 'none';
+    if (animesContent) animesContent.style.display = 'block';
+  } else {
+    panelTitle.textContent = '📚 Ajouter un livre';
+    if (booksContent) booksContent.style.display = 'block';
+    if (animesContent) animesContent.style.display = 'none';
+  }
+  
   rightPanel.classList.add('active');
   rightPanelOverlay.classList.add('active');
 }
@@ -94,6 +113,11 @@ document.querySelectorAll('.side-menu-item').forEach(button => {
     // Charge le catalogue si on clique sur l'onglet Catalogue (si décommenté)
     if (tabName === 'catalog' && window.loadCatalog) {
       window.loadCatalog();
+    }
+    
+    // Charge les animes si on clique sur l'onglet Animes
+    if (tabName === 'animes' && window.loadAnimes) {
+      window.loadAnimes();
     }
     
     // Ferme le menu
