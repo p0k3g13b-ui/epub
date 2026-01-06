@@ -35,6 +35,9 @@
         <button class="side-menu-item active" data-tab="library">
           📚 Livres
         </button>
+        <button class="side-menu-item" data-tab="animes">
+          🎬 Animes
+        </button>
         <!-- CATALOGUE - Pour réactiver, décommentez les 3 lignes ci-dessous
         <button class="side-menu-item" data-tab="catalog">
           📖 Catalogue
@@ -55,49 +58,88 @@
   <div class="right-panel" id="right-panel">
     <div class="right-panel-content">
       <div class="right-panel-header">
-        <h2>📚 Ajouter un livre</h2>
+        <h2 id="right-panel-title">📚 Ajouter un livre</h2>
         <button class="right-panel-close" id="right-panel-close">✕</button>
       </div>
 
       <div class="right-panel-body">
-        <!-- Bouton Anna's Archive -->
-        <a href="https://fr.annas-archive.se/search?index=&page=1&sort=&ext=epub&display=&q=" 
-           target="_blank" 
-           class="annas-archive-btn">
-          🔍 Rechercher sur Anna's Archive
-        </a>
+        <!-- Contenu pour les livres -->
+        <div id="books-panel-content">
+          <!-- Bouton Anna's Archive -->
+          <a href="https://fr.annas-archive.se/search?index=&page=1&sort=&ext=epub&display=&q=" 
+             target="_blank" 
+             class="annas-archive-btn">
+            🔍 Rechercher sur Anna's Archive
+          </a>
 
-        <div class="section-divider">ou</div>
+          <div class="section-divider">ou</div>
 
-        <!-- Recherche intégrée -->
-        <div class="search-box-panel">
-          <input 
-            type="text" 
-            id="search-input-panel" 
-            placeholder="Titre, auteur, ISBN..."
-            autocomplete="off"
-          >
-          <button id="search-button-panel">Rechercher</button>
+          <!-- Recherche intégrée -->
+          <div class="search-box-panel">
+            <input 
+              type="text" 
+              id="search-input-panel" 
+              placeholder="Titre, auteur, ISBN..."
+              autocomplete="off"
+            >
+            <button id="search-button-panel">Rechercher</button>
+          </div>
+
+          <div id="search-status-panel"></div>
+          <div id="search-results-panel"></div>
+
+          <div class="section-divider">ou</div>
+
+          <!-- Ajout direct par lien -->
+          <div class="direct-add-section">
+            <label for="direct-download-link">Lien de téléchargement direct :</label>
+            <input 
+              type="text" 
+              id="direct-download-link" 
+              class="download-link-input"
+              placeholder="https://ipfs.io/ipfs/... ou https://download.library.lol/..."
+            >
+            <button class="modal-button primary" id="direct-add-btn">
+              📥 Télécharger et ajouter
+            </button>
+            <div id="direct-add-status"></div>
+          </div>
         </div>
 
-        <div id="search-status-panel"></div>
-        <div id="search-results-panel"></div>
+        <!-- Contenu pour les animes -->
+        <div id="animes-panel-content" style="display: none;">
+          <!-- Recherche VF -->
+          <div class="anime-search-section">
+            <h3 class="anime-search-title">🇫🇷 Recherche VF</h3>
+            <div class="search-box-panel">
+              <input 
+                type="text" 
+                id="search-anime-vf-input" 
+                placeholder="Nom de l'anime..."
+                autocomplete="off"
+              >
+              <button id="search-anime-vf-btn">Rechercher</button>
+            </div>
+          </div>
 
-        <div class="section-divider">ou</div>
+          <div class="section-divider">ou</div>
 
-        <!-- Ajout direct par lien -->
-        <div class="direct-add-section">
-          <label for="direct-download-link">Lien de téléchargement direct :</label>
-          <input 
-            type="text" 
-            id="direct-download-link" 
-            class="download-link-input"
-            placeholder="https://ipfs.io/ipfs/... ou https://download.library.lol/..."
-          >
-          <button class="modal-button primary" id="direct-add-btn">
-            📥 Télécharger et ajouter
-          </button>
-          <div id="direct-add-status"></div>
+          <!-- Recherche VOSTFR -->
+          <div class="anime-search-section">
+            <h3 class="anime-search-title">🇯🇵 Recherche VOSTFR</h3>
+            <div class="search-box-panel">
+              <input 
+                type="text" 
+                id="search-anime-vostfr-input" 
+                placeholder="Nom de l'anime..."
+                autocomplete="off"
+              >
+              <button id="search-anime-vostfr-btn">Rechercher</button>
+            </div>
+          </div>
+
+          <div id="anime-search-status"></div>
+          <div id="anime-search-results"></div>
         </div>
       </div>
     </div>
@@ -135,8 +177,17 @@
   </div>
   -->
 
+  <!-- Contenu de l'onglet Animes -->
+  <div id="animes-tab" class="tab-content">
+    <div class="library-header">
+      <h2>Animes</h2>
+    </div>
+    <div id="animes-list"></div>
+  </div>
+
   <script src="auth.js"></script>
   <script src="index.js"></script>
   <script src="search.js"></script>
+  <script src="anime.js"></script>
 </body>
 </html>
