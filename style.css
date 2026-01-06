@@ -441,6 +441,115 @@ body {
   margin-top: 8px;
 }
 
+/* Section recherche anime */
+.anime-search-section {
+  margin-bottom: 20px;
+}
+
+.anime-search-title {
+  color: #b2bec3;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* Résultats recherche anime dans panneau */
+#anime-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.anime-result-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  gap: 12px;
+}
+
+.anime-result-card:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.anime-result-cover {
+  width: 60px;
+  height: 85px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.anime-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.anime-result-title {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anime-result-meta {
+  color: #b2bec3;
+  font-size: 12px;
+}
+
+/* Liste des animes (page principale) */
+#animes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.anime-item {
+  width: 200px;
+  height: 280px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 8px;
+  position: relative;
+}
+
+.anime-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.anime-cover {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.anime-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  font-size: 14px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Overlay pour panneau droit */
 .right-panel-overlay {
   position: fixed;
