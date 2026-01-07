@@ -9,8 +9,29 @@ let currentUser = null;
     // Affiche le nom d'utilisateur et le bouton de déconnexion
     displayUserInfo(currentUser);
     
-    // Charge la bibliothèque
-    window.loadLibrary();
+    // Vérifie s'il faut ouvrir un onglet spécifique
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    
+    if (tabParam === 'animes') {
+      // Active l'onglet animes
+      document.querySelectorAll('.side-menu-item').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      const animesBtn = document.querySelector('.side-menu-item[data-tab="animes"]');
+      const animesTab = document.getElementById('animes-tab');
+      
+      if (animesBtn) animesBtn.classList.add('active');
+      if (animesTab) animesTab.classList.add('active');
+      
+      // Charge les animes
+      if (window.loadAnimes) {
+        window.loadAnimes();
+      }
+    } else {
+      // Charge la bibliothèque par défaut
+      window.loadLibrary();
+    }
   } catch (err) {
     console.error('Erreur auth:', err);
     // requireAuth redirige déjà
