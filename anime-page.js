@@ -54,11 +54,13 @@ async function loadAnimeDetails(animeId) {
       return;
     }
     
-    // Récupère les positions de visionnage
+    // Récupère les positions de visionnage pour cet anime
+    const episodeIds = episodes.map(ep => ep.id);
     const { data: positions, error: positionsError } = await supabaseClient
       .from('anime_viewing_positions')
       .select('*')
-      .eq('user_id', currentUser.id);
+      .eq('user_id', currentUser.id)
+      .in('episode_id', episodeIds);
     
     if (positionsError) {
       console.warn('Erreur positions:', positionsError);
@@ -66,10 +68,31 @@ async function loadAnimeDetails(animeId) {
     
     // Crée un map episode_id → position
     const positionsMap = {};
-    if (positions) {
+    let lastWatchedEpisode = null;
+    let lastWatchedTime = null;
+    
+    if (positions && positions.length > 0) {
       positions.forEach(p => {
         positionsMap[p.episode_id] = p;
+        
+        // Trouve le dernier épisode visionné (non complété)
+        if (!p.completed) {
+          const watchTime = new Date(p.last_watched);
+          if (!lastWatchedTime || watchTime > lastWatchedTime) {
+            lastWatchedTime = watchTime;
+            lastWatchedEpisode = p.episode_id;
+          }
+        }
       });
+    }
+    
+    // Affiche le bouton "Reprendre" si un épisode en cours existe
+    if (lastWatchedEpisode) {
+      const resumeBtn = document.getElementById('resume-button');
+      resumeBtn.style.display = 'inline-flex';
+      resumeBtn.onclick = () => {
+        window.location.href = `player-anime.html?episode_id=${lastWatchedEpisode}`;
+      };
     }
     
     // Affiche les épisodes
