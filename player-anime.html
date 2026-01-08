@@ -318,11 +318,11 @@
         
         videoElement = document.getElementById('video-player');
         
-        // Timeout de 15 secondes
+        // Timeout de 5 secondes
         const timeout = setTimeout(() => {
-          console.log('⏱️ Timeout (15s) - vidéo trop lente à charger');
+          console.log('⏱️ Timeout (5s) - vidéo trop lente à charger');
           resolve(false);
-        }, 15000);
+        }, 5000);
         
         let errorFired = false;
         
