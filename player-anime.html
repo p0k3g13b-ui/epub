@@ -243,18 +243,26 @@
           .single();
         
         // Parse les liens
-        const links = JSON.parse(episode.links_json || '{}');
+        let linkData = JSON.parse(episode.links_json || 'null');
         
-        // Nettoie tous les liens
-        const cleanedLinks = {};
-        for (const [key, value] of Object.entries(links)) {
-          cleanedLinks[key] = cleanUrl(value);
+        // Gère l'ancien format (string) et le nouveau format ({ mp4, iframe })
+        if (typeof linkData === 'string') {
+          // Ancien format : juste l'URL en string
+          linkData = { mp4: linkData, iframe: null };
+        } else if (!linkData) {
+          // Pas de liens
+          showError('Aucun lien disponible pour cet épisode');
+          return;
         }
         
-        console.log('🔗 Liens disponibles:', Object.keys(cleanedLinks));
+        console.log('🔗 Liens disponibles:', linkData);
+        
+        // Nettoie les URLs
+        if (linkData.mp4) linkData.mp4 = cleanUrl(linkData.mp4);
+        if (linkData.iframe) linkData.iframe = cleanUrl(linkData.iframe);
         
         // Essaie de lire la vidéo
-        await attemptPlayback(cleanedLinks, position);
+        await attemptPlayback(linkData, position);
         
       } catch (err) {
         console.error('Erreur chargement épisode:', err);
@@ -262,22 +270,20 @@
       }
     }
 
-    async function attemptPlayback(links, savedPosition) {
+    async function attemptPlayback(linkData, savedPosition) {
       const startPosition = savedPosition && !savedPosition.completed ? savedPosition.position_seconds : 0;
       
-      // Essaie streamtape_mp4 en premier (via proxy)
-      if (links.streamtape_mp4) {
-        console.log('🎬 Tentative avec streamtape_mp4 via proxy');
-        const success = await tryVideoPlayback(links.streamtape_mp4, startPosition);
+      // Essaie le MP4 via proxy
+      if (linkData.mp4) {
+        console.log('🎬 Tentative avec MP4 via proxy');
+        const success = await tryVideoPlayback(linkData.mp4, linkData.iframe, startPosition);
         if (success) return;
       }
       
-      // Essaie les iframes
-      const iframeLinks = Object.entries(links).filter(([key]) => key.endsWith('_iframe'));
-      
-      for (const [key, url] of iframeLinks) {
-        console.log(`🎬 Tentative avec ${key}`);
-        const success = await tryIframePlayback(url);
+      // Fallback : iframe direct si disponible
+      if (linkData.iframe) {
+        console.log('🎬 Fallback : iframe Streamtape direct');
+        const success = await tryIframePlayback(linkData.iframe);
         if (success) return;
       }
       
@@ -286,15 +292,19 @@
       await rescrapeAndRetry();
     }
 
-    async function tryVideoPlayback(url, startPosition) {
+    async function tryVideoPlayback(mp4Url, iframeUrl, startPosition) {
       return new Promise((resolve) => {
         const playerContent = document.getElementById('player-content');
         
-        // Utilise le proxy backend pour contourner les restrictions CORS/Referer
-        const proxyUrl = `${BACKEND_URL}/proxy-video?url=${encodeURIComponent(url)}`;
+        // Construit l'URL du proxy avec le referer spécifique
+        let proxyUrl = `${BACKEND_URL}/proxy-video?url=${encodeURIComponent(mp4Url)}`;
+        if (iframeUrl) {
+          proxyUrl += `&referer=${encodeURIComponent(iframeUrl)}`;
+        }
         
-        console.log(`📹 URL originale: ${url.substring(0, 80)}...`);
-        console.log(`🔗 Via proxy: ${proxyUrl.substring(0, 80)}...`);
+        console.log(`📹 MP4: ${mp4Url.substring(0, 80)}...`);
+        console.log(`🔗 Referer: ${iframeUrl || 'https://streamtape.com/'}`);
+        console.log(`🔗 Via proxy: ${proxyUrl.substring(0, 100)}...`);
         
         playerContent.innerHTML = `
           <video id="video-player" controls autoplay>
@@ -394,12 +404,15 @@
           console.log('✅ Liens rechargés');
           
           // Nettoie les nouveaux liens
-          const cleanedLinks = {};
-          for (const [key, value] of Object.entries(data.links)) {
-            cleanedLinks[key] = cleanUrl(value);
+          let linkData = data.links;
+          if (typeof linkData === 'string') {
+            linkData = { mp4: linkData, iframe: null };
           }
           
-          await attemptPlayback(cleanedLinks, null);
+          if (linkData.mp4) linkData.mp4 = cleanUrl(linkData.mp4);
+          if (linkData.iframe) linkData.iframe = cleanUrl(linkData.iframe);
+          
+          await attemptPlayback(linkData, null);
         } else {
           showError('Épisode indisponible. Aucun lien valide trouvé.');
         }
