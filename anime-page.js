@@ -111,8 +111,20 @@ function displayAnimeHeader(anime) {
   
   titleEl.textContent = anime.titre;
   
+  // Affiche la couverture
   if (anime.cover_url) {
-    coverEl.innerHTML = `<img src="${anime.cover_url}" alt="${anime.titre}" class="anime-header-cover">`;
+    console.log('📸 URL couverture:', anime.cover_url);
+    
+    // Remplace le contenu par une vraie image avec les bons styles
+    coverEl.innerHTML = `<img 
+      src="${anime.cover_url}" 
+      alt="${anime.titre}" 
+      style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block;"
+      onerror="console.error('❌ Erreur chargement image:', this.src); this.style.display='none'; this.parentElement.textContent='🎬';"
+      onload="console.log('✅ Image chargée avec succès');"
+    >`;
+  } else {
+    console.warn('⚠️ Aucune URL de couverture trouvée');
   }
   
   let metaHtml = '';
