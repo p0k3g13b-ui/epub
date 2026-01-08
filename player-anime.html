@@ -307,26 +307,53 @@
         console.log(`🔗 Via proxy: ${proxyUrl.substring(0, 100)}...`);
         
         playerContent.innerHTML = `
-          <video id="video-player" controls autoplay>
+          <video id="video-player" controls autoplay crossorigin="anonymous">
             <source src="${proxyUrl}" type="video/mp4">
           </video>
         `;
         
         videoElement = document.getElementById('video-player');
         
+        // Timeout augmenté à 15 secondes
         const timeout = setTimeout(() => {
-          console.log('⏱️ Timeout (5s) pour cette source');
+          console.log('⏱️ Timeout (15s) - vidéo trop lente à charger');
           resolve(false);
-        }, 5000);
+        }, 15000);
+        
+        let errorFired = false;
         
         videoElement.onerror = (e) => {
+          if (errorFired) return;
+          errorFired = true;
+          
           console.log('❌ Erreur chargement vidéo:', e);
+          console.log('❌ Type d\'erreur:', videoElement.error ? {
+            code: videoElement.error.code,
+            message: videoElement.error.message,
+            MEDIA_ERR_ABORTED: videoElement.error.code === 1,
+            MEDIA_ERR_NETWORK: videoElement.error.code === 2,
+            MEDIA_ERR_DECODE: videoElement.error.code === 3,
+            MEDIA_ERR_SRC_NOT_SUPPORTED: videoElement.error.code === 4
+          } : 'Pas de détails');
+          
           clearTimeout(timeout);
           resolve(false);
         };
         
+        videoElement.onloadstart = () => {
+          console.log('🔄 Début du chargement vidéo...');
+        };
+        
+        videoElement.onprogress = () => {
+          console.log('📶 Téléchargement en cours...');
+        };
+        
+        videoElement.oncanplay = () => {
+          console.log('✅ Vidéo prête à être lue (canplay)');
+        };
+        
         videoElement.onloadeddata = () => {
-          console.log('✅ Vidéo chargée avec succès');
+          console.log('✅ Vidéo chargée avec succès (loadeddata)');
           clearTimeout(timeout);
           
           // Reprend à la position sauvegardée
