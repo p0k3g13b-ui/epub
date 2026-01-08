@@ -1,5 +1,28 @@
+function displayAnimeHeader(anime) {
+  const coverEl = document.getElementById('anime-cover');
+  const titleEl = document.getElementById('anime-title');
+  const metaEl = document.getElementById('anime-meta');
+  const synopsisEl = document.getElementById('anime-synopsis');
+  
+  titleEl.textContent = anime.titre;
+  
+  // Affiche la couverture via le proxy
+  if (anime.cover_url) {
+    console.log('📸 URL couverture:', anime.cover_url);
+    
+    // Utilise le proxy pour char// Déclare BACKEND_URL seulement s'il n'existe pas déjà
+if (typeof BACKEND_URL === 'undefined') {
+  var BACKEND_URL = 'https://epub-backend.vercel.app';
+}
+
 let currentUser = null;
 let selectedEpisodeId = null;
+
+// Fonction pour convertir une URL d'image en URL proxifiée
+function getProxiedImageUrl(imageUrl) {
+  if (!imageUrl) return null;
+  return `${BACKEND_URL}/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+}
 
 (async () => {
   try {
@@ -111,13 +134,14 @@ function displayAnimeHeader(anime) {
   
   titleEl.textContent = anime.titre;
   
-  // Affiche la couverture
+  // Affiche la couverture via le proxy
   if (anime.cover_url) {
-    console.log('📸 URL couverture:', anime.cover_url);
+    console.log('📸 URL couverture originale:', anime.cover_url);
+    const proxiedUrl = getProxiedImageUrl(anime.cover_url);
+    console.log('🔄 URL proxifiée:', proxiedUrl);
     
-    // Remplace le contenu par une vraie image avec les bons styles
     coverEl.innerHTML = `<img 
-      src="${anime.cover_url}" 
+      src="${proxiedUrl}" 
       alt="${anime.titre}" 
       style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block;"
       onerror="console.error('❌ Erreur chargement image:', this.src); this.style.display='none'; this.parentElement.textContent='🎬';"
@@ -164,7 +188,7 @@ function displayEpisodes(episodes, positionsMap) {
       ${badgeHtml}
       <div class="episode-thumbnail">
         ${episode.thumbnail_url ? 
-          `<img src="${episode.thumbnail_url}" style="width:100%; height:100%; object-fit:cover;">` :
+          `<img src="${getProxiedImageUrl(episode.thumbnail_url)}" style="width:100%; height:100%; object-fit:cover;">` :
           '🎬'
         }
       </div>
