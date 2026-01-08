@@ -276,7 +276,7 @@
         const playerContent = document.getElementById('player-content');
         playerContent.innerHTML = `
           <video id="video-player" controls autoplay>
-            <source src="${url}" type="video/mp4">
+            <source src="https://epub-backend.vercel.com/proxy-video?url=${encodeURIComponent(url)}" type="video/mp4">
           </video>
         `;
         
