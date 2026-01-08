@@ -11,6 +11,12 @@ const animeSearchVostfrBtn = document.getElementById('search-anime-vostfr-btn');
 const animeSearchStatus = document.getElementById('anime-search-status');
 const animeSearchResults = document.getElementById('anime-search-results');
 
+// Fonction pour convertir une URL d'image en URL proxifiée
+function getProxiedImageUrl(imageUrl) {
+  if (!imageUrl) return null;
+  return `${BACKEND_URL}/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+}
+
 // Fonction pour charger les animes de l'utilisateur
 window.loadAnimes = async function() {
   if (!animesListEl) return;
@@ -70,10 +76,10 @@ function displayAnime(anime) {
   container.className = 'anime-item';
   container.dataset.animeId = anime.id;
 
-  // Cover
+  // Cover avec proxy
   if (anime.cover_url) {
     const coverImg = document.createElement('img');
-    coverImg.src = anime.cover_url;
+    coverImg.src = getProxiedImageUrl(anime.cover_url);
     coverImg.alt = anime.titre;
     coverImg.className = 'anime-cover';
     container.appendChild(coverImg);
@@ -174,7 +180,7 @@ function displayAnimeResults(results) {
 
     card.innerHTML = `
       ${result.coverUrl ? 
-        `<img src="${escapeHtml(result.coverUrl)}" alt="${escapeHtml(result.titre)}" class="anime-result-cover">` :
+        `<img src="${getProxiedImageUrl(escapeHtml(result.coverUrl))}" alt="${escapeHtml(result.titre)}" class="anime-result-cover">` :
         '<div class="anime-result-cover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 32px;">🎬</div>'
       }
       <div class="anime-result-info">
