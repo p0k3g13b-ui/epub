@@ -161,11 +161,12 @@
     let saveInterval = null;
     let videoElement = null;
     let iframeElement = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
-    // Fonction pour nettoyer les URLs (supprime les guillemets échappés)
+    // Fonction pour nettoyer les URLs
     function cleanUrl(url) {
       if (!url) return '';
-      // Supprime les \" au début et à la fin, et les backslashes échappés
       return url.replace(/\\"/g, '').replace(/^"|"$/g, '').trim();
     }
 
@@ -247,11 +248,11 @@
         
         // Gère l'ancien format (string) et le nouveau format ({ mp4, iframe })
         if (typeof linkData === 'string') {
-          // Ancien format : juste l'URL en string
           linkData = { mp4: linkData, iframe: null };
         } else if (!linkData) {
-          // Pas de liens
-          showError('Aucun lien disponible pour cet épisode');
+          // Pas de liens, scrape directement
+          console.log('⚠️ Aucun lien disponible, scraping...');
+          await rescrapeAndRetry(position);
           return;
         }
         
@@ -277,19 +278,22 @@
       if (linkData.mp4) {
         console.log('🎬 Tentative avec MP4 via proxy');
         const success = await tryVideoPlayback(linkData.mp4, linkData.iframe, startPosition);
-        if (success) return;
+        
+        if (success) {
+          // Succès, réinitialise le compteur
+          retryCount = 0;
+          return;
+        }
+        
+        // Échec du MP4, on re-scrape pour obtenir un nouveau lien
+        console.log('❌ MP4 expiré ou invalide, régénération du lien...');
+        await rescrapeAndRetry(savedPosition);
+        return;
       }
       
-      // Fallback : iframe direct si disponible
-      if (linkData.iframe) {
-        console.log('🎬 Fallback : iframe Streamtape direct');
-        const success = await tryIframePlayback(linkData.iframe);
-        if (success) return;
-      }
-      
-      // Tous les liens ont échoué, re-scrape
-      console.log('⚠️ Tous les liens ont échoué, re-scraping...');
-      await rescrapeAndRetry();
+      // Pas de MP4 disponible, on scrape
+      console.log('⚠️ Aucun lien MP4, scraping...');
+      await rescrapeAndRetry(savedPosition);
     }
 
     async function tryVideoPlayback(mp4Url, iframeUrl, startPosition) {
@@ -314,7 +318,7 @@
         
         videoElement = document.getElementById('video-player');
         
-        // Timeout augmenté à 15 secondes
+        // Timeout de 15 secondes
         const timeout = setTimeout(() => {
           console.log('⏱️ Timeout (15s) - vidéo trop lente à charger');
           resolve(false);
@@ -329,11 +333,7 @@
           console.log('❌ Erreur chargement vidéo:', e);
           console.log('❌ Type d\'erreur:', videoElement.error ? {
             code: videoElement.error.code,
-            message: videoElement.error.message,
-            MEDIA_ERR_ABORTED: videoElement.error.code === 1,
-            MEDIA_ERR_NETWORK: videoElement.error.code === 2,
-            MEDIA_ERR_DECODE: videoElement.error.code === 3,
-            MEDIA_ERR_SRC_NOT_SUPPORTED: videoElement.error.code === 4
+            message: videoElement.error.message
           } : 'Pas de détails');
           
           clearTimeout(timeout);
@@ -370,17 +370,6 @@
       });
     }
 
-    async function tryIframePlayback(url) {
-      // Pour les iframes, on ne peut pas vraiment détecter le chargement
-      // On affiche directement
-      const playerContent = document.getElementById('player-content');
-      playerContent.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
-      iframeElement = playerContent.querySelector('iframe');
-      
-      console.log('✅ Iframe chargée');
-      return true;
-    }
-
     function startSavingPosition() {
       if (saveInterval) clearInterval(saveInterval);
       
@@ -412,8 +401,15 @@
       }, 10000);
     }
 
-    async function rescrapeAndRetry() {
-      showError('🔄 Rechargement des liens...', false);
+    async function rescrapeAndRetry(savedPosition) {
+      retryCount++;
+      
+      if (retryCount > MAX_RETRIES) {
+        showError(`Impossible de charger la vidéo après ${MAX_RETRIES} tentatives. Le lien peut être définitivement cassé.`);
+        return;
+      }
+      
+      showLoadingMessage(`🔄 Régénération du lien vidéo (tentative ${retryCount}/${MAX_RETRIES})...`);
       
       try {
         const response = await fetch(`${BACKEND_URL}/api/refresh-episode-links`, {
@@ -428,7 +424,7 @@
         const data = await response.json();
         
         if (data.success && data.links) {
-          console.log('✅ Liens rechargés');
+          console.log('✅ Nouveaux liens obtenus');
           
           // Nettoie les nouveaux liens
           let linkData = data.links;
@@ -439,15 +435,40 @@
           if (linkData.mp4) linkData.mp4 = cleanUrl(linkData.mp4);
           if (linkData.iframe) linkData.iframe = cleanUrl(linkData.iframe);
           
-          await attemptPlayback(linkData, null);
+          if (linkData.mp4) {
+            // On a un nouveau MP4, on essaie de lire
+            const startPosition = savedPosition && !savedPosition.completed ? savedPosition.position_seconds : 0;
+            const success = await tryVideoPlayback(linkData.mp4, linkData.iframe, startPosition);
+            
+            if (success) {
+              // Succès, réinitialise le compteur
+              retryCount = 0;
+            } else {
+              // Échec, on réessaie
+              console.log('❌ Nouveau lien également invalide, nouvelle tentative...');
+              await rescrapeAndRetry(savedPosition);
+            }
+          } else {
+            // Pas de MP4 dans la réponse
+            showError('Aucun lien MP4 disponible pour cet épisode.');
+          }
         } else {
-          showError('Épisode indisponible. Aucun lien valide trouvé.');
+          showError('Impossible de régénérer le lien vidéo.');
         }
         
       } catch (err) {
         console.error('Erreur re-scraping:', err);
-        showError('Erreur lors du rechargement des liens');
+        showError('Erreur lors de la régénération du lien');
       }
+    }
+
+    function showLoadingMessage(message) {
+      const playerContent = document.getElementById('player-content');
+      playerContent.innerHTML = `
+        <div class="loading-message">
+          ${message}
+        </div>
+      `;
     }
 
     function showError(message, showRetry = true) {
