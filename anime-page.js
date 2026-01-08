@@ -1,16 +1,4 @@
-function displayAnimeHeader(anime) {
-  const coverEl = document.getElementById('anime-cover');
-  const titleEl = document.getElementById('anime-title');
-  const metaEl = document.getElementById('anime-meta');
-  const synopsisEl = document.getElementById('anime-synopsis');
-  
-  titleEl.textContent = anime.titre;
-  
-  // Affiche la couverture via le proxy
-  if (anime.cover_url) {
-    console.log('📸 URL couverture:', anime.cover_url);
-    
-    // Utilise le proxy pour char// Déclare BACKEND_URL seulement s'il n'existe pas déjà
+// Déclare BACKEND_URL seulement s'il n'existe pas déjà
 if (typeof BACKEND_URL === 'undefined') {
   var BACKEND_URL = 'https://epub-backend.vercel.app';
 }
