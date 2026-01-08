@@ -162,6 +162,13 @@
     let videoElement = null;
     let iframeElement = null;
 
+    // Fonction pour nettoyer les URLs (supprime les guillemets échappés)
+    function cleanUrl(url) {
+      if (!url) return '';
+      // Supprime les \" au début et à la fin, et les backslashes échappés
+      return url.replace(/\\"/g, '').replace(/^"|"$/g, '').trim();
+    }
+
     (async () => {
       try {
         currentUser = await requireAuth();
@@ -238,8 +245,16 @@
         // Parse les liens
         const links = JSON.parse(episode.links_json || '{}');
         
+        // Nettoie tous les liens
+        const cleanedLinks = {};
+        for (const [key, value] of Object.entries(links)) {
+          cleanedLinks[key] = cleanUrl(value);
+        }
+        
+        console.log('🔗 Liens disponibles:', Object.keys(cleanedLinks));
+        
         // Essaie de lire la vidéo
-        await attemptPlayback(links, position);
+        await attemptPlayback(cleanedLinks, position);
         
       } catch (err) {
         console.error('Erreur chargement épisode:', err);
@@ -250,9 +265,9 @@
     async function attemptPlayback(links, savedPosition) {
       const startPosition = savedPosition && !savedPosition.completed ? savedPosition.position_seconds : 0;
       
-      // Essaie streamtape_mp4 en premier
+      // Essaie streamtape_mp4 en premier (via proxy)
       if (links.streamtape_mp4) {
-        console.log('Tentative avec streamtape_mp4');
+        console.log('🎬 Tentative avec streamtape_mp4 via proxy');
         const success = await tryVideoPlayback(links.streamtape_mp4, startPosition);
         if (success) return;
       }
@@ -261,45 +276,53 @@
       const iframeLinks = Object.entries(links).filter(([key]) => key.endsWith('_iframe'));
       
       for (const [key, url] of iframeLinks) {
-        console.log(`Tentative avec ${key}`);
+        console.log(`🎬 Tentative avec ${key}`);
         const success = await tryIframePlayback(url);
         if (success) return;
       }
       
       // Tous les liens ont échoué, re-scrape
-      console.log('Tous les liens ont échoué, re-scraping...');
+      console.log('⚠️ Tous les liens ont échoué, re-scraping...');
       await rescrapeAndRetry();
     }
 
     async function tryVideoPlayback(url, startPosition) {
       return new Promise((resolve) => {
         const playerContent = document.getElementById('player-content');
+        
+        // Utilise le proxy backend pour contourner les restrictions CORS/Referer
+        const proxyUrl = `${BACKEND_URL}/proxy-video?url=${encodeURIComponent(url)}`;
+        
+        console.log(`📹 URL originale: ${url.substring(0, 80)}...`);
+        console.log(`🔗 Via proxy: ${proxyUrl.substring(0, 80)}...`);
+        
         playerContent.innerHTML = `
           <video id="video-player" controls autoplay>
-            <source src="https://epub-backend.vercel.com/proxy-video?url=${encodeURIComponent(url)}" type="video/mp4">
+            <source src="${proxyUrl}" type="video/mp4">
           </video>
         `;
         
         videoElement = document.getElementById('video-player');
         
         const timeout = setTimeout(() => {
-          console.log('Timeout pour', url);
+          console.log('⏱️ Timeout (5s) pour cette source');
           resolve(false);
         }, 5000);
         
-        videoElement.onerror = () => {
-          console.log('Erreur chargement', url);
+        videoElement.onerror = (e) => {
+          console.log('❌ Erreur chargement vidéo:', e);
           clearTimeout(timeout);
           resolve(false);
         };
         
         videoElement.onloadeddata = () => {
-          console.log('✅ Vidéo chargée');
+          console.log('✅ Vidéo chargée avec succès');
           clearTimeout(timeout);
           
           // Reprend à la position sauvegardée
           if (startPosition > 0) {
             videoElement.currentTime = startPosition;
+            console.log(`⏩ Reprise à ${startPosition}s`);
           }
           
           // Sauvegarde la position toutes les 10 secondes
@@ -345,7 +368,7 @@
               onConflict: 'user_id,episode_id'
             });
           
-          console.log('Position sauvegardée:', Math.floor(position));
+          console.log('💾 Position sauvegardée:', Math.floor(position), '/', Math.floor(duration));
         } catch (err) {
           console.error('Erreur sauvegarde position:', err);
         }
@@ -353,7 +376,7 @@
     }
 
     async function rescrapeAndRetry() {
-      showError('Rechargement des liens...', false);
+      showError('🔄 Rechargement des liens...', false);
       
       try {
         const response = await fetch(`${BACKEND_URL}/api/refresh-episode-links`, {
@@ -369,7 +392,14 @@
         
         if (data.success && data.links) {
           console.log('✅ Liens rechargés');
-          await attemptPlayback(data.links, null);
+          
+          // Nettoie les nouveaux liens
+          const cleanedLinks = {};
+          for (const [key, value] of Object.entries(data.links)) {
+            cleanedLinks[key] = cleanUrl(value);
+          }
+          
+          await attemptPlayback(cleanedLinks, null);
         } else {
           showError('Épisode indisponible. Aucun lien valide trouvé.');
         }
