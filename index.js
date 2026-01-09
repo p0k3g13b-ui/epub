@@ -1,5 +1,6 @@
 // --- Vérification de l'authentification ---
 let currentUser = null;
+let currentTab = 'library'; // Stocke l'onglet actif
 
 (async () => {
   try {
@@ -14,22 +15,18 @@ let currentUser = null;
     const tabParam = urlParams.get('tab');
     
     if (tabParam === 'animes') {
-      // Active l'onglet animes
-      document.querySelectorAll('.side-menu-item').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
-      const animesBtn = document.querySelector('.side-menu-item[data-tab="animes"]');
-      const animesTab = document.getElementById('animes-tab');
-      
-      if (animesBtn) animesBtn.classList.add('active');
-      if (animesTab) animesTab.classList.add('active');
-      
-      // Charge les animes
+      switchTab('animes');
       if (window.loadAnimes) {
         window.loadAnimes();
       }
+    } else if (tabParam === 'movies') {
+      switchTab('movies');
+      if (window.loadMovies) {
+        window.loadMovies();
+      }
     } else {
       // Charge la bibliothèque par défaut
+      switchTab('library');
       window.loadLibrary();
     }
   } catch (err) {
@@ -49,6 +46,97 @@ function displayUserInfo(user) {
   // Affiche le pseudo avec icône dans le menu latéral
   sideMenuUser.innerHTML = `👤 ${user.username || user.email}`;
 }
+
+// Fonction pour changer d'onglet
+function switchTab(tabName) {
+  currentTab = tabName;
+  
+  // Met à jour les boutons du menu
+  document.querySelectorAll('.side-menu-item').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  
+  const tabBtn = document.querySelector(`.side-menu-item[data-tab="${tabName}"]`);
+  const tabContent = document.getElementById(`${tabName}-tab`);
+  
+  if (tabBtn) tabBtn.classList.add('active');
+  if (tabContent) tabContent.classList.add('active');
+  
+  // Ferme le menu latéral sur mobile
+  document.getElementById('side-menu').classList.remove('active');
+  document.getElementById('menu-overlay').classList.remove('active');
+}
+
+// Gestion des clics sur les onglets du menu
+document.querySelectorAll('.side-menu-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabName = btn.dataset.tab;
+    switchTab(tabName);
+    
+    // Charge le contenu approprié
+    if (tabName === 'library' && window.loadLibrary) {
+      window.loadLibrary();
+    } else if (tabName === 'animes' && window.loadAnimes) {
+      window.loadAnimes();
+    } else if (tabName === 'movies' && window.loadMovies) {
+      window.loadMovies();
+    } else if (tabName === 'catalog' && window.loadCatalog) {
+      window.loadCatalog();
+    }
+  });
+});
+
+// Gestion du bouton + (panneau de droite)
+document.getElementById('add-book-toggle').addEventListener('click', () => {
+  const rightPanel = document.getElementById('right-panel');
+  const overlay = document.getElementById('right-panel-overlay');
+  const title = document.getElementById('right-panel-title');
+  
+  // Change le titre et le contenu selon l'onglet actif
+  document.getElementById('books-panel-content').style.display = 'none';
+  document.getElementById('animes-panel-content').style.display = 'none';
+  document.getElementById('movies-panel-content').style.display = 'none';
+  
+  if (currentTab === 'library') {
+    title.textContent = '📚 Ajouter un livre';
+    document.getElementById('books-panel-content').style.display = 'block';
+  } else if (currentTab === 'animes') {
+    title.textContent = '🎬 Ajouter un anime';
+    document.getElementById('animes-panel-content').style.display = 'block';
+  } else if (currentTab === 'movies') {
+    title.textContent = '🎞️ Ajouter un film';
+    document.getElementById('movies-panel-content').style.display = 'block';
+  }
+  
+  rightPanel.classList.add('active');
+  overlay.classList.add('active');
+});
+
+// Fonction pour fermer le panneau droit (utilisée par les autres scripts)
+window.closeRightPanel = function() {
+  document.getElementById('right-panel').classList.remove('active');
+  document.getElementById('right-panel-overlay').classList.remove('active');
+};
+
+// Fermeture du panneau droit
+document.getElementById('right-panel-close').addEventListener('click', closeRightPanel);
+document.getElementById('right-panel-overlay').addEventListener('click', closeRightPanel);
+
+// Gestion du menu hamburger
+document.getElementById('menu-toggle').addEventListener('click', () => {
+  document.getElementById('side-menu').classList.toggle('active');
+  document.getElementById('menu-overlay').classList.toggle('active');
+});
+
+document.getElementById('menu-overlay').addEventListener('click', () => {
+  document.getElementById('side-menu').classList.remove('active');
+  document.getElementById('menu-overlay').classList.remove('active');
+});
+
+// Déconnexion
+document.getElementById('side-menu-logout').addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  window.location.href = 'login.html';
+});
 
 const epubListEl = document.getElementById('epub-list');
 const catalogListEl = document.getElementById('catalog-list');
