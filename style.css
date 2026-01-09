@@ -1273,3 +1273,154 @@ h1 {
     width: 100%;
   }
 }
+
+/* Styles pour l'onglet Films */
+#movies-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.movie-item {
+  width: 200px;
+  height: 280px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 8px;
+  position: relative;
+}
+
+.movie-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.movie-cover {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.movie-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  font-size: 14px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.movie-status {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.movie-status.unread {
+  color: #95a5a6;
+  background: rgba(149, 165, 166, 0.2);
+}
+
+.movie-status.watching {
+  color: #f39c12;
+  background: rgba(243, 156, 18, 0.2);
+}
+
+.movie-status.watched {
+  color: #27ae60;
+  background: rgba(39, 174, 96, 0.2);
+}
+
+/* Résultats recherche films dans panneau */
+#movie-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.movie-result-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.movie-result-cover {
+  width: 60px;
+  height: 85px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.movie-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.movie-result-title {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movie-result-meta {
+  color: #b2bec3;
+  font-size: 12px;
+}
+
+.add-movie-btn {
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.add-movie-btn:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.add-movie-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive films */
+@media (max-width: 768px) {
+  .movie-item {
+    width: 150px;
+    height: 220px;
+  }
+}
