@@ -137,6 +137,7 @@
 
   <script src="auth.js"></script>
   <script>
+    const BACKEND_URL = 'https://epub-backend.vercel.app';
     let currentUser = null;
     let currentMovie = null;
     let saveInterval = null;
@@ -214,9 +215,14 @@
       
       console.log(`🎬 Lecture MP4: ${mp4Url.substring(0, 80)}...`);
       
+      // Utilise le proxy pour contourner les protections CORS/Referer
+      const proxyUrl = `${BACKEND_URL}/proxy-video?url=${encodeURIComponent(mp4Url)}&referer=${encodeURIComponent('https://tokyvideo.com/')}`;
+      
+      console.log(`🔗 Via proxy: ${proxyUrl.substring(0, 100)}...`);
+      
       playerContent.innerHTML = `
-        <video id="video-player" controls autoplay>
-          <source src="${mp4Url}" type="video/mp4">
+        <video id="video-player" controls autoplay crossorigin="anonymous">
+          <source src="${proxyUrl}" type="video/mp4">
         </video>
       `;
       
@@ -224,6 +230,10 @@
       
       videoElement.onerror = (e) => {
         console.error('❌ Erreur chargement vidéo:', e);
+        console.error('❌ Type d\'erreur:', videoElement.error ? {
+          code: videoElement.error.code,
+          message: videoElement.error.message
+        } : 'Pas de détails');
         showError('Erreur lors du chargement de la vidéo');
       };
       
