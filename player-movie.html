@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecteur - EpubReader</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@1"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    .player-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .player-header {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      z-index: 100;
+    }
+
+    .player-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .player-controls-top {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: transform 0.2s;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+    }
+
+    .btn-back {
+      background: #636e72;
+      color: white;
+    }
+
+    .player-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      position: relative;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .loading-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .error-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+      max-width: 500px;
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 12px;
+    }
+
+    .error-message h2 {
+      margin-bottom: 16px;
+      color: #e74c3c;
+    }
+
+    .error-message button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="player-container">
+    <div class="player-header">
+      <div class="player-title" id="player-title">Chargement...</div>
+      <div class="player-controls-top">
+        <button class="btn btn-back" id="btn-back">← Retour aux films</button>
+      </div>
+    </div>
+
+    <div class="player-content" id="player-content">
+      <div class="loading-message" id="loading-message">
+        ⏳ Chargement de la vidéo...
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    let currentUser = null;
+    let currentMovie = null;
+    let saveInterval = null;
+    let videoElement = null;
+
+    (async () => {
+      try {
+        currentUser = await requireAuth();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const movieId = urlParams.get('movie_id');
+        
+        if (!movieId) {
+          alert('ID film manquant');
+          history.back();
+          return;
+        }
+        
+        await loadAndPlayMovie(movieId);
+        
+      } catch (err) {
+        console.error('Erreur:', err);
+      }
+    })();
+
+    async function loadAndPlayMovie(movieId) {
+      try {
+        // Récupère le film
+        const { data: movie, error: movieError } = await supabaseClient
+          .from('movies_library')
+          .select('*')
+          .eq('id', movieId)
+          .single();
+        
+        if (movieError || !movie) {
+          showError('Film introuvable');
+          return;
+        }
+        
+        currentMovie = movie;
+        
+        // Met à jour le titre
+        document.getElementById('player-title').textContent = movie.titre;
+        
+        // Configure le bouton retour
+        document.getElementById('btn-back').onclick = () => {
+          window.location.href = 'index.html?tab=movies';
+        };
+        
+        // Récupère la position de visionnage
+        const { data: position } = await supabaseClient
+          .from('movie_viewing_positions')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('movie_id', movieId)
+          .single();
+        
+        const startPosition = position && !position.completed ? position.position_seconds : 0;
+        
+        // Charge la vidéo
+        if (movie.mp4_url) {
+          playVideo(movie.mp4_url, startPosition);
+        } else {
+          showError('Aucun lien vidéo disponible pour ce film');
+        }
+        
+      } catch (err) {
+        console.error('Erreur chargement film:', err);
+        showError('Erreur lors du chargement du film');
+      }
+    }
+
+    function playVideo(mp4Url, startPosition) {
+      const playerContent = document.getElementById('player-content');
+      
+      console.log(`🎬 Lecture MP4: ${mp4Url.substring(0, 80)}...`);
+      
+      playerContent.innerHTML = `
+        <video id="video-player" controls autoplay>
+          <source src="${mp4Url}" type="video/mp4">
+        </video>
+      `;
+      
+      videoElement = document.getElementById('video-player');
+      
+      videoElement.onerror = (e) => {
+        console.error('❌ Erreur chargement vidéo:', e);
+        showError('Erreur lors du chargement de la vidéo');
+      };
+      
+      videoElement.onloadeddata = () => {
+        console.log('✅ Vidéo chargée avec succès');
+        
+        // Reprend à la position sauvegardée
+        if (startPosition > 0) {
+          videoElement.currentTime = startPosition;
+          console.log(`⏩ Reprise à ${startPosition}s`);
+        }
+        
+        // Sauvegarde la position toutes les 10 secondes
+        startSavingPosition();
+      };
+    }
+
+    function startSavingPosition() {
+      if (saveInterval) clearInterval(saveInterval);
+      
+      saveInterval = setInterval(async () => {
+        if (!videoElement) return;
+        
+        const position = videoElement.currentTime;
+        const duration = videoElement.duration;
+        const completed = (position / duration) > 0.9;
+        
+        try {
+          await supabaseClient
+            .from('movie_viewing_positions')
+            .upsert({
+              user_id: currentUser.id,
+              movie_id: currentMovie.id,
+              position_seconds: Math.floor(position),
+              duration_seconds: Math.floor(duration),
+              completed: completed,
+              last_watched: new Date().toISOString()
+            }, {
+              onConflict: 'user_id,movie_id'
+            });
+          
+          // Met à jour le statut dans user_movies
+          const newStatus = completed ? 'watched' : 'watching';
+          await supabaseClient
+            .from('user_movies')
+            .update({ reading_status: newStatus })
+            .eq('user_id', currentUser.id)
+            .eq('movie_id', currentMovie.id);
+          
+          console.log('💾 Position sauvegardée:', Math.floor(position), '/', Math.floor(duration));
+        } catch (err) {
+          console.error('Erreur sauvegarde position:', err);
+        }
+      }, 10000);
+    }
+
+    function showError(message, showRetry = true) {
+      const playerContent = document.getElementById('player-content');
+      playerContent.innerHTML = `
+        <div class="error-message">
+          <h2>❌ Erreur</h2>
+          <p>${message}</p>
+          ${showRetry ? `<button onclick="location.reload()">🔄 Réessayer</button>` : ''}
+        </div>
+      `;
+    }
+
+    // Nettoie l'intervalle quand on quitte la page
+    window.addEventListener('beforeunload', () => {
+      if (saveInterval) clearInterval(saveInterval);
+    });
+  </script>
+</body>
+</html>
