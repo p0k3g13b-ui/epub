@@ -187,84 +187,29 @@ function displayAnimeResults(results) {
         <div class="anime-result-title">${escapeHtml(result.titre)}</div>
         <div class="anime-result-meta">${result.nbEpisodes || '?'} épisodes</div>
       </div>
+      <button class="add-anime-btn">➕ Ajouter</button>
     `;
 
-    card.addEventListener('click', () => openAnimeEpisodesModal(result));
+    card.querySelector('.add-anime-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      addAnime(result, card.querySelector('.add-anime-btn'));
+    });
+
     animeSearchResults.appendChild(card);
   });
 }
 
-// Ouvre la modal pour choisir les épisodes
-function openAnimeEpisodesModal(animeData) {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>📥 ${escapeHtml(animeData.titre)}</h2>
-        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
-      </div>
-      
-      <div class="modal-body">
-        <p><strong>${animeData.nbEpisodes || '?'}</strong> épisodes disponibles</p>
-        
-        <div style="display: flex; gap: 12px; align-items: center; margin: 20px 0;">
-          <label style="flex-shrink: 0;">Épisodes :</label>
-          <input type="number" id="episode-start" min="1" max="${animeData.nbEpisodes || 999}" value="1" 
-                 style="width: 80px; padding: 8px; border: 2px solid #e0e0e0; border-radius: 4px;">
-          <span>à</span>
-          <input type="number" id="episode-end" min="1" max="${animeData.nbEpisodes || 999}" value="${animeData.nbEpisodes || 12}" 
-                 style="width: 80px; padding: 8px; border: 2px solid #e0e0e0; border-radius: 4px;">
-        </div>
-        
-        <div id="modal-anime-status"></div>
-      </div>
-      
-      <div class="modal-footer">
-        <button class="modal-button secondary" onclick="this.closest('.modal-overlay').remove()">
-          Annuler
-        </button>
-        <button class="modal-button primary" id="add-anime-episodes-btn">
-          ➕ Ajouter les épisodes
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  // Événement du bouton d'ajout
-  document.getElementById('add-anime-episodes-btn').addEventListener('click', () => {
-    addAnimeEpisodes(animeData, modal);
-  });
-}
-
-// Ajoute les épisodes d'un anime
-async function addAnimeEpisodes(animeData, modal) {
-  const startInput = document.getElementById('episode-start');
-  const endInput = document.getElementById('episode-end');
-  const statusEl = document.getElementById('modal-anime-status');
-  const addBtn = document.getElementById('add-anime-episodes-btn');
-
-  const start = parseInt(startInput.value);
-  const end = parseInt(endInput.value);
-
-  if (!start || !end || start > end || start < 1) {
-    statusEl.innerHTML = '<div class="status-message error">❌ Plage d\'épisodes invalide</div>';
-    return;
-  }
-
+// Ajoute un anime (tous les épisodes)
+async function addAnime(animeData, button) {
   const user = await getCurrentUser();
   if (!user) {
-    statusEl.innerHTML = '<div class="status-message error">❌ Utilisateur non connecté</div>';
+    alert('Utilisateur non connecté');
     return;
   }
 
-  addBtn.disabled = true;
-  startInput.disabled = true;
-  endInput.disabled = true;
-  addBtn.textContent = '⏳ Ajout en cours...';
-  statusEl.innerHTML = '<div class="status-message loading">⏳ Scraping et ajout des épisodes...</div>';
+  button.disabled = true;
+  button.textContent = '⏳ Ajout...';
+  showAnimeStatus('⏳ Ajout de l\'anime et de tous ses épisodes...', 'loading');
 
   try {
     const response = await fetch(`${BACKEND_URL}/api/add-anime-episodes`, {
@@ -273,8 +218,6 @@ async function addAnimeEpisodes(animeData, modal) {
       body: JSON.stringify({
         animeUrl: animeData.url,
         userId: user.id,
-        episodeStart: start,
-        episodeEnd: end,
         metadata: {
           titre: animeData.titre,
           coverUrl: animeData.coverUrl,
@@ -286,15 +229,16 @@ async function addAnimeEpisodes(animeData, modal) {
     const data = await response.json();
 
     if (data.success) {
-      statusEl.innerHTML = '<div class="status-message success">✅ Épisodes ajoutés avec succès !</div>';
+      showAnimeStatus(`✅ ${data.totalEpisodes} épisode(s) ajouté(s) avec succès !`, 'success');
+      button.textContent = '✅ Ajouté';
+      button.style.background = '#27ae60';
       
       setTimeout(() => {
-        modal.remove();
         // Recharge la liste des animes
         if (window.loadAnimes) {
           window.loadAnimes();
         }
-        // Ferme le panneau droit
+        // Ferme le panneau
         closeRightPanel();
       }, 1500);
     } else {
@@ -303,11 +247,9 @@ async function addAnimeEpisodes(animeData, modal) {
 
   } catch (error) {
     console.error('Erreur ajout anime:', error);
-    statusEl.innerHTML = `<div class="status-message error">❌ ${error.message}</div>`;
-    addBtn.disabled = false;
-    startInput.disabled = false;
-    endInput.disabled = false;
-    addBtn.textContent = '➕ Ajouter les épisodes';
+    showAnimeStatus(`❌ ${error.message}`, 'error');
+    button.disabled = false;
+    button.textContent = '➕ Ajouter';
   }
 }
 
