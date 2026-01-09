@@ -38,6 +38,9 @@
         <button class="side-menu-item" data-tab="animes">
           🎬 Animes
         </button>
+        <button class="side-menu-item" data-tab="movies">
+          🎞️ Films
+        </button>
         <!-- CATALOGUE - Pour réactiver, décommentez les 3 lignes ci-dessous
         <button class="side-menu-item" data-tab="catalog">
           📖 Catalogue
@@ -141,6 +144,22 @@
           <div id="anime-search-status"></div>
           <div id="anime-search-results"></div>
         </div>
+
+        <!-- Contenu pour les films -->
+        <div id="movies-panel-content" style="display: none;">
+          <div class="search-box-panel">
+            <input 
+              type="text" 
+              id="search-movie-input" 
+              placeholder="Titre du film..."
+              autocomplete="off"
+            >
+            <button id="search-movie-btn">Rechercher</button>
+          </div>
+
+          <div id="movie-search-status"></div>
+          <div id="movie-search-results"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -185,9 +204,33 @@
     <div id="animes-list"></div>
   </div>
 
+  <!-- Contenu de l'onglet Films -->
+  <div id="movies-tab" class="tab-content">
+    <div class="library-header">
+      <h2>Films</h2>
+      <select id="movie-status-filter" class="status-filter">
+        <option value="all">Tous les films</option>
+        <option value="watching">En cours</option>
+        <option value="unread">Non vu</option>
+        <option value="watched">Vu</option>
+      </select>
+    </div>
+    <div id="movies-list"></div>
+  </div>
+
+  <!-- Menu contextuel pour les films -->
+  <div id="movie-context-menu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" data-status="watching">📖 En cours</div>
+    <div class="context-menu-item" data-status="unread">📕 Non vu</div>
+    <div class="context-menu-item" data-status="watched">✅ Vu</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item danger" data-action="remove">🗑️ Retirer de ma bibliothèque</div>
+  </div>
+
   <script src="auth.js"></script>
   <script src="index.js"></script>
   <script src="search.js"></script>
   <script src="anime.js"></script>
+  <script src="movie.js"></script>
 </body>
 </html>
