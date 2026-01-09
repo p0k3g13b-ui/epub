@@ -43,15 +43,23 @@ function openRightPanel() {
   const panelTitle = document.getElementById('right-panel-title');
   const booksContent = document.getElementById('books-panel-content');
   const animesContent = document.getElementById('animes-panel-content');
+  const moviesContent = document.getElementById('movies-panel-content');
   
+  // Cache tous les contenus
+  if (booksContent) booksContent.style.display = 'none';
+  if (animesContent) animesContent.style.display = 'none';
+  if (moviesContent) moviesContent.style.display = 'none';
+  
+  // Affiche le bon contenu
   if (tabName === 'animes') {
     panelTitle.textContent = '🎬 Ajouter un anime';
-    if (booksContent) booksContent.style.display = 'none';
     if (animesContent) animesContent.style.display = 'block';
+  } else if (tabName === 'movies') {
+    panelTitle.textContent = '🎞️ Ajouter un film';
+    if (moviesContent) moviesContent.style.display = 'block';
   } else {
     panelTitle.textContent = '📚 Ajouter un livre';
     if (booksContent) booksContent.style.display = 'block';
-    if (animesContent) animesContent.style.display = 'none';
   }
   
   rightPanel.classList.add('active');
@@ -63,6 +71,9 @@ function closeRightPanel() {
   rightPanel.classList.remove('active');
   rightPanelOverlay.classList.remove('active');
 }
+
+// Rend la fonction accessible globalement pour movie.js et anime.js
+window.closeRightPanel = closeRightPanel;
 
 // Toggle menu gauche
 menuToggle.addEventListener('click', (e) => {
@@ -118,6 +129,11 @@ document.querySelectorAll('.side-menu-item').forEach(button => {
     // Charge les animes si on clique sur l'onglet Animes
     if (tabName === 'animes' && window.loadAnimes) {
       window.loadAnimes();
+    }
+    
+    // Charge les films si on clique sur l'onglet Films
+    if (tabName === 'movies' && window.loadMovies) {
+      window.loadMovies();
     }
     
     // Ferme le menu
