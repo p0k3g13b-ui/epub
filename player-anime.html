@@ -246,14 +246,22 @@
         // Parse les liens
         let linkData = JSON.parse(episode.links_json || 'null');
         
+        // Si pas de liens, scrape-les maintenant (lazy loading)
+        if (!linkData) {
+          console.log('🔗 Liens non disponibles, scraping à la demande...');
+          showLoadingMessage('⏳ Préparation de l\'épisode, veuillez patienter...');
+          
+          linkData = await fetchEpisodeLink(episodeId, episode.voiranime_url);
+          
+          if (!linkData) {
+            showError('Impossible de récupérer le lien vidéo');
+            return;
+          }
+        }
+        
         // Gère l'ancien format (string) et le nouveau format ({ mp4, iframe })
         if (typeof linkData === 'string') {
           linkData = { mp4: linkData, iframe: null };
-        } else if (!linkData) {
-          // Pas de liens, scrape directement
-          console.log('⚠️ Aucun lien disponible, scraping...');
-          await rescrapeAndRetry(position);
-          return;
         }
         
         console.log('🔗 Liens disponibles:', linkData);
@@ -268,6 +276,45 @@
       } catch (err) {
         console.error('Erreur chargement épisode:', err);
         showError('Erreur lors du chargement de l\'épisode');
+      }
+    }
+
+    // Nouvelle fonction : récupère le lien d'un épisode avec retry
+    async function fetchEpisodeLink(episodeId, episodeUrl, retryCount = 0) {
+      const MAX_RETRIES = 3;
+      
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/get-episode-link`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            episodeId: episodeId,
+            episodeUrl: episodeUrl
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.links) {
+          console.log('✅ Lien obtenu');
+          return data.links;
+        } else {
+          throw new Error(data.message || 'Failed to get link');
+        }
+        
+      } catch (error) {
+        console.error(`❌ Erreur fetch link (tentative ${retryCount + 1}/${MAX_RETRIES}):`, error);
+        
+        // Retry automatique
+        if (retryCount < MAX_RETRIES) {
+          console.log(`🔄 Nouvelle tentative dans 2 secondes...`);
+          showLoadingMessage(`⏳ Tentative ${retryCount + 1}/${MAX_RETRIES} échouée, nouvelle tentative...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return await fetchEpisodeLink(episodeId, episodeUrl, retryCount + 1);
+        }
+        
+        // Toutes les tentatives ont échoué
+        return null;
       }
     }
 
